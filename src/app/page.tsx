@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import GraphLegend from "@/components/graph/GraphLegend";
 import ConceptInfoPanel from "@/components/graph/ConceptInfoPanel";
 import LessonModal from "@/components/graph/LessonModal";
@@ -29,6 +30,12 @@ export default function Home() {
           </span>
         </div>
         <div className="flex items-center gap-4">
+          <Link
+            href="/dashboard"
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/40 hover:border-slate-600/60"
+          >
+            Teacher Dashboard
+          </Link>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/40">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-xs text-slate-400">Demo Student</span>

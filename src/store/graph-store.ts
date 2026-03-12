@@ -23,6 +23,10 @@ interface GraphState {
   selectedConceptId: string | null;
   isLessonModalOpen: boolean;
 
+  // Mastery animation state
+  recentlyMasteredId: string | null;
+  recentlyUnlockedIds: string[];
+
   // Derived
   getConceptNode: (id: string) => ConceptNode | undefined;
   getConceptLessons: (conceptId: string) => Lesson[];
@@ -34,6 +38,7 @@ interface GraphState {
   openLessonModal: (conceptId: string) => void;
   closeLessonModal: () => void;
   updateProgress: (conceptId: string, status: ProgressStatus) => void;
+  clearMasteryAnimation: () => void;
 }
 
 // Build initial progress map from seed data
@@ -61,6 +66,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
   selectedConceptId: null,
   isLessonModalOpen: false,
+  recentlyMasteredId: null,
+  recentlyUnlockedIds: [],
 
   getConceptNode: (id: string) => {
     const state = get();
@@ -117,6 +124,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       const newMap = new Map(state.progressMap);
       newMap.set(conceptId, status);
 
+      const newlyUnlocked: string[] = [];
+
       // If concept is now mastered, unlock concepts that have all prerequisites mastered
       if (status === "mastered") {
         const potentialUnlocks = state.prerequisites
@@ -134,10 +143,18 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
           if (allMastered && newMap.get(unlockId) === "locked") {
             newMap.set(unlockId, "unlocked");
+            newlyUnlocked.push(unlockId);
           }
         }
       }
 
-      return { progressMap: newMap };
+      return {
+        progressMap: newMap,
+        recentlyMasteredId: status === "mastered" ? conceptId : null,
+        recentlyUnlockedIds: newlyUnlocked,
+      };
     }),
+
+  clearMasteryAnimation: () =>
+    set({ recentlyMasteredId: null, recentlyUnlockedIds: [] }),
 }));

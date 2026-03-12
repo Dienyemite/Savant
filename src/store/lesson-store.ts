@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Lesson, LessonBlock } from "@/types";
 import { useChatStore } from "@/store/chat-store";
+import { useTelemetryStore } from "@/store/telemetry-store";
 
 // ============================================
 // Lesson Engine Store
@@ -145,10 +146,18 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       startedAt: Date.now(),
       completedAt: null,
     });
+
+    // Start telemetry session
+    useTelemetryStore.getState().startSession(lesson.id, conceptId);
+    // Enter first slide
+    if (sorted.length > 0) {
+      useTelemetryStore.getState().enterSlide(sorted[0].id, sorted[0].type);
+    }
   },
 
   exitLesson: () => {
     useChatStore.getState().resetChat();
+    useTelemetryStore.getState().resetSession();
     set({
       activeLesson: null,
       activeLessonConceptId: null,
@@ -166,6 +175,13 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     set((state) => {
       const next = state.currentSlideIndex + 1;
       if (next >= state.totalSlides) return state;
+      // Track slide transition in telemetry
+      const sorted = state.activeLesson
+        ? [...state.activeLesson.content_schema].sort((a, b) => a.order - b.order)
+        : [];
+      if (sorted[next]) {
+        useTelemetryStore.getState().enterSlide(sorted[next].id, sorted[next].type);
+      }
       return { currentSlideIndex: next };
     }),
 
@@ -173,6 +189,12 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     set((state) => {
       const prev = state.currentSlideIndex - 1;
       if (prev < 0) return state;
+      const sorted = state.activeLesson
+        ? [...state.activeLesson.content_schema].sort((a, b) => a.order - b.order)
+        : [];
+      if (sorted[prev]) {
+        useTelemetryStore.getState().enterSlide(sorted[prev].id, sorted[prev].type);
+      }
       return { currentSlideIndex: prev };
     }),
 
@@ -182,7 +204,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       return { currentSlideIndex: index };
     }),
 
-  setAnswer: (blockId, value) =>
+  setAnswer: (blockId, value) => {
+    useTelemetryStore.getState().recordInteraction();
     set((state) => ({
       answers: {
         ...state.answers,
@@ -194,7 +217,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
           attempts: state.answers[blockId]?.attempts ?? 0,
         },
       },
-    })),
+    }));
+  },
 
   validateBlock: (blockId) => {
     const state = get();
@@ -259,6 +283,11 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       },
     }));
 
+    // Record attempt in telemetry
+    useTelemetryStore.getState().recordAttempt(
+      validationState as "correct" | "incorrect"
+    );
+
     // Auto-trigger Socratic tutor after 2 failed attempts (per spec §2.3)
     if (validationState === "incorrect" && newAttempts >= 2) {
       useChatStore.getState().triggerFromFailure();
@@ -267,9 +296,11 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     return validationState;
   },
 
-  completeLesson: () =>
+  completeLesson: () => {
+    useTelemetryStore.getState().completeSession();
     set({
       isLessonComplete: true,
       completedAt: Date.now(),
-    }),
+    });
+  },
 }));

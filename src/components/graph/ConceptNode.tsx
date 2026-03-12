@@ -49,6 +49,8 @@ export interface ConceptNodeData {
   icon: string | null;
   description: string;
   difficulty: number;
+  justMastered?: boolean;
+  justUnlocked?: boolean;
   [key: string]: unknown;
 }
 
@@ -57,7 +59,7 @@ type ConceptGraphNodeProps = NodeProps & {
 };
 
 function ConceptGraphNode({ data }: ConceptGraphNodeProps) {
-  const { label, domain, status, icon, difficulty } = data;
+  const { label, domain, status, icon, difficulty, justMastered, justUnlocked } = data;
   const color = DOMAIN_COLORS[domain];
   const IconComponent = icon ? ICON_MAP[icon] ?? CircleDot : CircleDot;
 
@@ -98,6 +100,45 @@ function ConceptGraphNode({ data }: ConceptGraphNodeProps) {
           transition={{
             duration: 3,
             repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      )}
+
+      {/* Fresh mastery burst — elegant expanding rings */}
+      {justMastered && (
+        <>
+          {[0, 1, 2, 3].map((i) => (
+            <motion.div
+              key={`burst-${i}`}
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                border: `2px solid ${color}`,
+              }}
+              initial={{ scale: 1, opacity: 0.8 }}
+              animate={{ scale: 2 + i * 0.5, opacity: 0 }}
+              transition={{
+                duration: 1.5,
+                delay: i * 0.2,
+                ease: "easeOut",
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Fresh unlock pulse — subtle attention-draw */}
+      {justUnlocked && (
+        <motion.div
+          className="absolute inset-0 rounded-2xl"
+          style={{
+            border: `2px solid ${color}`,
+          }}
+          initial={{ scale: 1, opacity: 0.7 }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.7, 0, 0.7] }}
+          transition={{
+            duration: 1.5,
+            repeat: 3,
             ease: "easeInOut",
           }}
         />

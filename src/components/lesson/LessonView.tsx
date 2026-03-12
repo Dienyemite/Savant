@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useLessonStore } from "@/store/lesson-store";
 import { useGraphStore } from "@/store/graph-store";
+import { useTelemetryStore } from "@/store/telemetry-store";
 import { DOMAIN_COLORS, DOMAIN_LABELS } from "@/types";
 import LessonBlockRenderer from "./LessonBlockRenderer";
 import {
@@ -16,6 +17,9 @@ import {
   Trophy,
   Sparkles,
   Clock,
+  Brain,
+  Target,
+  Zap,
 } from "lucide-react";
 import SocraticChat from "./SocraticChat";
 
@@ -62,7 +66,7 @@ export default function LessonView() {
     completeLesson,
   } = useLessonStore();
 
-  const { updateProgress, concepts } = useGraphStore();
+  const { updateProgress, concepts, recentlyUnlockedIds } = useGraphStore();
 
   const currentBlock = getCurrentBlock();
   const progress = getProgress();
@@ -210,74 +214,222 @@ export default function LessonView() {
                 </div>
               </motion.div>
             ) : (
-              /* Completion screen */
+              /* Elegant "Slow Dopamine" Completion Screen */
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                className="w-full max-w-md text-center space-y-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                className="w-full max-w-lg text-center space-y-8 relative"
               >
+                {/* Ambient glow rings */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute rounded-full"
+                      style={{
+                        border: `1px solid ${domainColor}`,
+                        width: 100 + i * 80,
+                        height: 100 + i * 80,
+                      }}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{
+                        opacity: [0, 0.15, 0],
+                        scale: [0.8, 1.2, 1.6],
+                      }}
+                      transition={{
+                        duration: 3,
+                        delay: i * 0.4,
+                        repeat: Infinity,
+                        ease: "easeOut",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Trophy icon — slow, elegant pulse */}
                 <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0],
-                  }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
                   transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: "reverse",
+                    type: "spring",
+                    stiffness: 150,
+                    damping: 15,
+                    delay: 0.2,
                   }}
+                  className="relative"
                 >
-                  <Trophy
-                    className="w-16 h-16 mx-auto"
-                    style={{ color: domainColor }}
-                  />
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Trophy
+                      className="w-14 h-14 mx-auto"
+                      style={{ color: domainColor }}
+                    />
+                  </motion.div>
                 </motion.div>
 
-                <div className="space-y-2">
+                {/* Title with staggered reveal */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.5 }}
+                  className="space-y-2"
+                >
                   <h2 className="text-2xl font-bold text-slate-100">
                     Concept Mastered
                   </h2>
                   <p className="text-slate-400">
                     You&apos;ve completed{" "}
-                    <span className="text-slate-200 font-medium">
+                    <span
+                      className="font-medium"
+                      style={{ color: domainColor }}
+                    >
                       {activeLesson.title}
                     </span>
                   </p>
-                </div>
+                </motion.div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-800/50 rounded-xl p-3 space-y-1">
-                    <Clock className="w-4 h-4 text-slate-500 mx-auto" />
-                    <div className="text-lg font-bold text-slate-200 font-mono">
-                      {formatTime(elapsedSeconds)}
-                    </div>
-                    <div className="text-[10px] text-slate-500 uppercase">
-                      Time Spent
-                    </div>
-                  </div>
-                  <div className="bg-slate-800/50 rounded-xl p-3 space-y-1">
-                    <Sparkles className="w-4 h-4 text-slate-500 mx-auto" />
-                    <div className="text-lg font-bold text-slate-200">
-                      {totalSlides}
-                    </div>
-                    <div className="text-[10px] text-slate-500 uppercase">
-                      Steps Completed
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleExit}
-                  className="w-full font-semibold"
-                  style={{
-                    backgroundColor: domainColor,
-                    color: "#0f172a",
-                  }}
+                {/* Stats grid — staggered entry */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="grid grid-cols-4 gap-2"
                 >
-                  Return to Constellation
-                </Button>
+                  {[
+                    {
+                      icon: Clock,
+                      value: formatTime(elapsedSeconds),
+                      label: "Time",
+                    },
+                    {
+                      icon: Target,
+                      value: String(totalSlides),
+                      label: "Steps",
+                    },
+                    {
+                      icon: Brain,
+                      value: (() => {
+                        const sessions =
+                          useTelemetryStore.getState().completedSessions;
+                        const last = sessions[sessions.length - 1];
+                        return last
+                          ? `${Math.round(last.productiveStruggleScore * 100)}%`
+                          : "—";
+                      })(),
+                      label: "Focus",
+                    },
+                    {
+                      icon: Zap,
+                      value: (() => {
+                        const sessions =
+                          useTelemetryStore.getState().completedSessions;
+                        const last = sessions[sessions.length - 1];
+                        return last
+                          ? String(
+                              last.slideEvents.reduce(
+                                (s, e) => s + e.interactions,
+                                0
+                              )
+                            )
+                          : "0";
+                      })(),
+                      label: "Interactions",
+                    },
+                  ].map((stat, i) => (
+                    <motion.div
+                      key={stat.label}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.9 + i * 0.1 }}
+                      className="bg-slate-800/40 rounded-xl p-3 space-y-1 border border-slate-700/30"
+                    >
+                      <stat.icon className="w-3.5 h-3.5 text-slate-500 mx-auto" />
+                      <div className="text-base font-bold text-slate-200 font-mono">
+                        {stat.value}
+                      </div>
+                      <div className="text-[9px] text-slate-500 uppercase tracking-wider">
+                        {stat.label}
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Newly unlocked concepts — bridge notification */}
+                {recentlyUnlockedIds.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.4, duration: 0.5 }}
+                    className="bg-slate-800/30 border border-slate-700/30 rounded-xl px-4 py-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Sparkles
+                        className="w-4 h-4"
+                        style={{ color: domainColor }}
+                      />
+                      <span className="text-xs font-semibold text-slate-300">
+                        New Paths Unlocked
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {recentlyUnlockedIds.map((uid, i) => {
+                        const unlocked = concepts.find((c) => c.id === uid);
+                        if (!unlocked) return null;
+                        return (
+                          <motion.div
+                            key={uid}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{
+                              delay: 1.6 + i * 0.15,
+                              type: "spring",
+                              stiffness: 200,
+                            }}
+                          >
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2.5 py-1"
+                              style={{
+                                color:
+                                  DOMAIN_COLORS[unlocked.domain],
+                                borderColor: `${DOMAIN_COLORS[unlocked.domain]}40`,
+                              }}
+                            >
+                              {unlocked.title}
+                            </Badge>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Return button — delayed entry */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.6 }}
+                >
+                  <Button
+                    onClick={handleExit}
+                    className="w-full font-semibold"
+                    style={{
+                      backgroundColor: domainColor,
+                      color: "#0f172a",
+                    }}
+                  >
+                    Return to Constellation
+                  </Button>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>

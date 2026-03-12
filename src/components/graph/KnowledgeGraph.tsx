@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -32,7 +32,20 @@ export default function KnowledgeGraph() {
     progressMap,
     openLessonModal,
     selectConcept,
+    recentlyMasteredId,
+    recentlyUnlockedIds,
+    clearMasteryAnimation,
   } = useGraphStore();
+
+  // Clear mastery animations after they play
+  useEffect(() => {
+    if (recentlyMasteredId || recentlyUnlockedIds.length > 0) {
+      const timer = setTimeout(() => {
+        clearMasteryAnimation();
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [recentlyMasteredId, recentlyUnlockedIds, clearMasteryAnimation]);
 
   // Build React Flow nodes from concepts
   const initialNodes: Node<ConceptNodeData>[] = useMemo(
@@ -48,9 +61,11 @@ export default function KnowledgeGraph() {
           icon: concept.icon,
           description: concept.description,
           difficulty: concept.difficulty,
+          justMastered: concept.id === recentlyMasteredId,
+          justUnlocked: recentlyUnlockedIds.includes(concept.id),
         },
       })),
-    [concepts, progressMap]
+    [concepts, progressMap, recentlyMasteredId, recentlyUnlockedIds]
   );
 
   // Build React Flow edges from prerequisites
@@ -68,20 +83,32 @@ export default function KnowledgeGraph() {
         const isActive =
           sourceStatus === "mastered" && targetStatus !== "locked";
 
+        // Highlight edges leading to freshly unlocked concepts
+        const isFreshBridge = recentlyUnlockedIds.includes(
+          prereq.concept_id
+        );
+
         return {
           id: `${prereq.prerequisite_id}->${prereq.concept_id}`,
           source: prereq.prerequisite_id,
           target: prereq.concept_id,
           type: "default",
-          animated: isActive,
+          animated: isActive || isFreshBridge,
           style: {
-            stroke: isActive ? color : "#334155",
-            strokeWidth: isActive ? 2 : 1,
-            opacity: isActive ? 0.8 : 0.3,
+            stroke: isFreshBridge
+              ? color
+              : isActive
+              ? color
+              : "#334155",
+            strokeWidth: isFreshBridge ? 3 : isActive ? 2 : 1,
+            opacity: isFreshBridge ? 1 : isActive ? 0.8 : 0.3,
+            filter: isFreshBridge
+              ? `drop-shadow(0 0 6px ${color})`
+              : undefined,
           },
         };
       }),
-    [prerequisites, concepts, progressMap]
+    [prerequisites, concepts, progressMap, recentlyUnlockedIds]
   );
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
