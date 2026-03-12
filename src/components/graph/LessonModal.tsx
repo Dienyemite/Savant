@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGraphStore } from "@/store/graph-store";
+import { useLessonStore } from "@/store/lesson-store";
 import {
   DOMAIN_COLORS,
   DOMAIN_LABELS,
@@ -82,10 +83,14 @@ function LessonCard({
   lesson,
   index,
   color,
+  conceptId,
+  onLaunch,
 }: {
   lesson: Lesson;
   index: number;
   color: string;
+  conceptId: string;
+  onLaunch: (lesson: Lesson, conceptId: string) => void;
 }) {
   const interactiveBlocks = lesson.content_schema.filter(
     (b) => b.type !== "text"
@@ -96,6 +101,7 @@ function LessonCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
+      onClick={() => onLaunch(lesson, conceptId)}
       className="group rounded-xl border border-slate-700/50 bg-slate-800/50 p-4 
                  hover:border-slate-600 hover:bg-slate-800/80 transition-all cursor-pointer"
     >
@@ -143,6 +149,13 @@ export default function LessonModal() {
     getPrerequisitesFor,
     getUnlockedBy,
   } = useGraphStore();
+
+  const { startLesson } = useLessonStore();
+
+  const handleLaunchLesson = (lesson: Lesson, conceptId: string) => {
+    closeLessonModal();
+    startLesson(lesson, conceptId);
+  };
 
   if (!selectedConceptId) return null;
 
@@ -261,6 +274,8 @@ export default function LessonModal() {
                         lesson={lesson}
                         index={i}
                         color={color}
+                        conceptId={concept.id}
+                        onLaunch={handleLaunchLesson}
                       />
                     ))}
                   </div>
@@ -303,6 +318,11 @@ export default function LessonModal() {
               <Separator className="bg-slate-700/50" />
               <div className="px-6 py-4">
                 <Button
+                  onClick={() => {
+                    if (lessons.length > 0) {
+                      handleLaunchLesson(lessons[0], concept.id);
+                    }
+                  }}
                   className="w-full font-semibold"
                   style={{
                     backgroundColor: color,

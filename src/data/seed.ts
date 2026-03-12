@@ -354,6 +354,299 @@ export const LESSONS: Lesson[] = [
     ],
     created_at: new Date().toISOString(),
   },
+  // --- Addition Lesson 2: Building upon the first ---
+  {
+    id: "l-addition-2",
+    concept_id: "c-addition",
+    title: "Addition with Bigger Numbers",
+    description:
+      "Practice addition with larger quantities and see visual feedback.",
+    order: 1,
+    content_schema: [
+      {
+        id: "a2-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Adding Bigger Numbers\n\nNow let's think bigger. If you have **8 books** on one shelf and **6 books** on another, how many books do you have in total?",
+        style: "body",
+      },
+      {
+        id: "a2-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Total books",
+        min: 0,
+        max: 20,
+        step: 1,
+        initial_value: 0,
+        correct_value: 14,
+        unit: "books",
+      },
+      {
+        id: "a2-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "Which of these additions gives the LARGEST result?",
+        options: [
+          { id: "a", text: "5 + 4 = 9" },
+          { id: "b", text: "7 + 7 = 14" },
+          { id: "c", text: "3 + 6 = 9" },
+          { id: "d", text: "8 + 2 = 10" },
+        ],
+        correct_option_id: "b",
+      },
+      {
+        id: "a2-b4",
+        type: "text",
+        order: 3,
+        content:
+          "Notice: the order doesn't matter! **8 + 6** gives the same result as **6 + 8**. This property is called *commutativity*.",
+        style: "callout",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Subtraction Lesson ---
+  {
+    id: "l-subtraction-1",
+    concept_id: "c-subtraction",
+    title: "Taking Away",
+    description:
+      "Learn subtraction by removing items from a group.",
+    order: 0,
+    content_schema: [
+      {
+        id: "s1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Taking Away\n\nYou have **10 cookies**. You give **4** to your friend.\n\nHow many cookies do you have left?",
+        style: "body",
+      },
+      {
+        id: "s1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Remaining cookies",
+        min: 0,
+        max: 10,
+        step: 1,
+        initial_value: 10,
+        correct_value: 6,
+        unit: "cookies",
+      },
+      {
+        id: "s1-b3",
+        type: "text",
+        order: 2,
+        content:
+          "**Subtraction** finds the *difference* between two numbers. It's the opposite of addition: 10 - 4 = 6, and 6 + 4 = 10.",
+        style: "callout",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Geometry Lesson ---
+  {
+    id: "l-geometry-1",
+    concept_id: "c-geometry",
+    title: "Shapes All Around",
+    description:
+      "Explore basic geometric shapes and their properties.",
+    order: 0,
+    content_schema: [
+      {
+        id: "g1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Shapes All Around\n\nGeometry is the study of **shapes**, **sizes**, and **positions** of things.\n\nLook around you — geometry is everywhere! Windows are rectangles, wheels are circles, road signs are triangles.",
+        style: "body",
+      },
+      {
+        id: "g1-b2",
+        type: "drag_drop_match",
+        order: 1,
+        instruction: "Match each shape to its number of sides:",
+        items: [
+          { id: "g-i1", content: "Triangle" },
+          { id: "g-i2", content: "Square" },
+          { id: "g-i3", content: "Pentagon" },
+          { id: "g-i4", content: "Hexagon" },
+        ],
+        targets: [
+          { id: "g-t1", label: "3 sides" },
+          { id: "g-t2", label: "4 sides" },
+          { id: "g-t3", label: "5 sides" },
+          { id: "g-t4", label: "6 sides" },
+        ],
+        correct_mapping: {
+          "g-i1": "g-t1",
+          "g-i2": "g-t2",
+          "g-i3": "g-t3",
+          "g-i4": "g-t4",
+        },
+      },
+      {
+        id: "g1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "A shape with all sides equal and all angles equal is called:",
+        options: [
+          { id: "a", text: "Irregular polygon" },
+          { id: "b", text: "Regular polygon" },
+          { id: "c", text: "Asymmetric shape" },
+          { id: "d", text: "Open figure" },
+        ],
+        correct_option_id: "b",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Gravity Lesson ---
+  {
+    id: "l-gravity-1",
+    concept_id: "c-gravity",
+    title: "Why Things Fall",
+    description:
+      "Discover the invisible force that holds the universe together.",
+    order: 0,
+    content_schema: [
+      {
+        id: "gr1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Why Things Fall\n\nDrop a ball. It falls to the ground. But **why**?\n\nThere's an invisible force pulling everything toward the center of the Earth. We call it **gravity**.",
+        style: "body",
+      },
+      {
+        id: "gr1-b2",
+        type: "multiple_choice",
+        order: 1,
+        question:
+          "If you dropped a feather and a bowling ball on the Moon (no air), which hits the ground first?",
+        options: [
+          { id: "a", text: "The bowling ball, because it's heavier" },
+          { id: "b", text: "The feather, because it's lighter" },
+          { id: "c", text: "They hit at the same time" },
+          { id: "d", text: "Neither falls — there's no gravity on the Moon" },
+        ],
+        correct_option_id: "c",
+      },
+      {
+        id: "gr1-b3",
+        type: "text",
+        order: 2,
+        content:
+          "Without air resistance, gravity pulls all objects at the **same rate**. This was first demonstrated by Galileo and later confirmed on the Moon by astronaut David Scott!",
+        style: "hint",
+      },
+      {
+        id: "gr1-b4",
+        type: "interactive_slider",
+        order: 3,
+        label: "Gravitational acceleration on Earth (m/s²)",
+        min: 0,
+        max: 20,
+        step: 1,
+        initial_value: 0,
+        correct_value: 10,
+        unit: "m/s²",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Multiplication Lesson 2 with Formula Builder ---
+  {
+    id: "l-multiplication-2",
+    concept_id: "c-multiplication",
+    title: "Building Expressions",
+    description:
+      "Construct multiplication expressions from tokens.",
+    order: 1,
+    content_schema: [
+      {
+        id: "m2-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Building Expressions\n\nMultiplication can be written in different ways. Let's build a multiplication expression.\n\nA farmer has **5 rows** of apple trees. Each row has **6 trees**. Build the expression for the total number of trees.",
+        style: "body",
+      },
+      {
+        id: "m2-b2",
+        type: "formula_builder",
+        order: 1,
+        instruction:
+          "Build the expression: 5 rows × 6 trees per row = total trees",
+        available_tokens: ["5", "×", "6", "=", "30", "+", "11", "25"],
+        correct_formula: ["5", "×", "6", "=", "30"],
+      },
+      {
+        id: "m2-b3",
+        type: "text",
+        order: 2,
+        content:
+          "**5 × 6 = 30**. The farmer has 30 trees in total. Multiplication is a powerful shortcut for repeated addition!",
+        style: "callout",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Pattern Recognition Lesson ---
+  {
+    id: "l-patterns-1",
+    concept_id: "c-patterns",
+    title: "Seeing the Pattern",
+    description:
+      "Train your eye to spot repeating structures in numbers.",
+    order: 0,
+    content_schema: [
+      {
+        id: "p1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Seeing the Pattern\n\nPatterns are everywhere — in nature, in music, in numbers. Recognizing patterns is one of the most powerful skills your brain has.\n\nLook at this sequence: **2, 4, 6, 8, …**\n\nWhat comes next?",
+        style: "body",
+      },
+      {
+        id: "p1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Next number in the sequence",
+        min: 0,
+        max: 20,
+        step: 1,
+        initial_value: 0,
+        correct_value: 10,
+      },
+      {
+        id: "p1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "What's the rule for the pattern 2, 4, 6, 8, 10?",
+        options: [
+          { id: "a", text: "Add 3 each time" },
+          { id: "b", text: "Add 2 each time" },
+          { id: "c", text: "Multiply by 2 each time" },
+          { id: "d", text: "Add 1, then add 3, alternating" },
+        ],
+        correct_option_id: "b",
+      },
+      {
+        id: "p1-b4",
+        type: "text",
+        order: 3,
+        content:
+          "This is an **arithmetic sequence** — each term increases by the same amount. Patterns like this are the building blocks of mathematics, music, and even computer science.",
+        style: "callout",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
 ];
 
 // ============================================

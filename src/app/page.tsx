@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import GraphLegend from "@/components/graph/GraphLegend";
 import ConceptInfoPanel from "@/components/graph/ConceptInfoPanel";
 import LessonModal from "@/components/graph/LessonModal";
+import LessonView from "@/components/lesson/LessonView";
 
 // React Flow must be loaded client-side only (uses window/DOM APIs)
 const KnowledgeGraph = dynamic(
@@ -44,6 +45,7 @@ export default function Home() {
       <GraphLegend />
       <ConceptInfoPanel />
       <LessonModal />
+      <LessonView />
     </main>
   );
 }
