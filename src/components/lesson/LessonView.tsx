@@ -17,6 +17,7 @@ import {
   Sparkles,
   Clock,
 } from "lucide-react";
+import SocraticChat from "./SocraticChat";
 
 // ============================================
 // LessonView — Full-screen lesson experience
@@ -351,6 +352,9 @@ export default function LessonView() {
           </footer>
         )}
       </div>
+
+      {/* Socratic AI Tutor overlay */}
+      <SocraticChat />
     </motion.div>
   );
 }

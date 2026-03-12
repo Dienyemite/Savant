@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Lesson, LessonBlock } from "@/types";
+import { useChatStore } from "@/store/chat-store";
 
 // ============================================
 // Lesson Engine Store
@@ -146,7 +147,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     });
   },
 
-  exitLesson: () =>
+  exitLesson: () => {
+    useChatStore.getState().resetChat();
     set({
       activeLesson: null,
       activeLessonConceptId: null,
@@ -157,7 +159,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       isLessonComplete: false,
       startedAt: null,
       completedAt: null,
-    }),
+    });
+  },
 
   nextSlide: () =>
     set((state) => {
@@ -243,16 +246,23 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       ? "correct"
       : "incorrect";
 
+    const newAttempts = (state.answers[blockId]?.attempts ?? 0) + 1;
+
     set((s) => ({
       answers: {
         ...s.answers,
         [blockId]: {
           ...s.answers[blockId],
           validationState,
-          attempts: (s.answers[blockId]?.attempts ?? 0) + 1,
+          attempts: newAttempts,
         },
       },
     }));
+
+    // Auto-trigger Socratic tutor after 2 failed attempts (per spec §2.3)
+    if (validationState === "incorrect" && newAttempts >= 2) {
+      useChatStore.getState().triggerFromFailure();
+    }
 
     return validationState;
   },
