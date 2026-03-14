@@ -194,15 +194,14 @@ export default function SocraticChat() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={isMinimized ? openChat : toggleChat}
-            className="fixed bottom-6 right-6 z-[60] flex items-center justify-center w-14 h-14 rounded-full shadow-lg shadow-black/40 transition-colors"
-            style={{ backgroundColor: domainColor }}
+            className="fixed bottom-6 right-6 z-[60] flex items-center justify-center w-14 h-14 rounded-full bg-white shadow-lg shadow-black/40 hover:bg-white/90 transition-colors"
           >
-            <MessageCircle className="w-6 h-6 text-slate-950" />
+            <MessageCircle className="w-6 h-6 text-black" />
             {/* Notification pulse on trigger */}
             {useChatStore.getState().hasBeenTriggered &&
               messages.length > 0 &&
               !isOpen && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white animate-pulse" />
               )}
           </motion.button>
         )}
@@ -216,44 +215,33 @@ export default function SocraticChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-6 right-6 z-[60] w-[380px] max-h-[500px] flex flex-col bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
+            className="fixed bottom-6 right-6 z-[60] w-[380px] max-h-[500px] flex flex-col bg-black border border-white/12 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden glow-border"
           >
             {/* Header */}
-            <div
-              className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50"
-              style={{
-                background: `linear-gradient(135deg, ${domainColor}15, transparent)`,
-              }}
-            >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
               <div className="flex items-center gap-2.5">
-                <div
-                  className="flex items-center justify-center w-8 h-8 rounded-lg"
-                  style={{ backgroundColor: `${domainColor}20` }}
-                >
-                  <Sparkles
-                    className="w-4 h-4"
-                    style={{ color: domainColor }}
-                  />
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/8">
+                  <Sparkles className="w-4 h-4 text-white/60" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-200">
+                  <h3 className="text-sm font-semibold text-white text-glow-subtle">
                     Socratic Tutor
                   </h3>
-                  <p className="text-[10px] text-slate-500">
-                    I'll help you think, not give answers
+                  <p className="text-[10px] text-white/30">
+                    I&apos;ll help you think, not give answers
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={minimizeChat}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-white/8 text-white/30 hover:text-white/60 transition-colors"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <button
                   onClick={closeChat}
-                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-white/8 text-white/30 hover:text-white/60 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -261,23 +249,17 @@ export default function SocraticChat() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[340px] scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px] max-h-[340px]">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8 space-y-3">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${domainColor}15` }}
-                  >
-                    <Sparkles
-                      className="w-6 h-6"
-                      style={{ color: domainColor }}
-                    />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/6">
+                    <Sparkles className="w-6 h-6 text-white/40" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-slate-300">
+                    <p className="text-sm font-medium text-white/60">
                       Need help thinking it through?
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-white/30 mt-1">
                       Ask me a question — I&apos;ll guide you with hints, not
                       answers.
                     </p>
@@ -297,12 +279,12 @@ export default function SocraticChat() {
                   <div
                     className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-slate-700/70 text-slate-200 rounded-br-md"
-                        : "bg-slate-800/70 text-slate-300 rounded-bl-md border border-slate-700/30"
+                        ? "bg-white/10 text-white/90 rounded-br-md"
+                        : "bg-white/5 text-white/70 rounded-bl-md border border-white/8"
                     }`}
                   >
                     {msg.content || (
-                      <span className="inline-flex items-center gap-1 text-slate-500">
+                      <span className="inline-flex items-center gap-1 text-white/30">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Thinking…
                       </span>
@@ -315,7 +297,7 @@ export default function SocraticChat() {
 
             {/* Input */}
             <div className="px-3 pb-3 pt-1">
-              <div className="flex items-center gap-2 bg-slate-800/70 rounded-xl px-3 py-2 border border-slate-700/30 focus-within:border-slate-600/50 transition-colors">
+              <div className="flex items-center gap-2 bg-white/6 rounded-xl px-3 py-2 border border-white/8 focus-within:border-white/25 transition-colors">
                 <input
                   ref={inputRef}
                   type="text"
@@ -324,7 +306,7 @@ export default function SocraticChat() {
                   onKeyDown={handleKeyDown}
                   placeholder="Ask for a hint…"
                   disabled={isStreaming}
-                  className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-500 outline-none disabled:opacity-50"
+                  className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
@@ -333,7 +315,7 @@ export default function SocraticChat() {
                   style={{
                     backgroundColor:
                       input.trim() && !isStreaming
-                        ? domainColor
+                        ? "rgba(255,255,255,1)"
                         : "transparent",
                   }}
                 >
@@ -341,7 +323,7 @@ export default function SocraticChat() {
                     className="w-4 h-4"
                     style={{
                       color:
-                        input.trim() && !isStreaming ? "#0f172a" : "#64748b",
+                        input.trim() && !isStreaming ? "#000000" : "rgba(255,255,255,0.3)",
                     }}
                   />
                 </button>

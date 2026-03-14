@@ -153,12 +153,12 @@ export interface ConceptNode {
 // --- Domain color mapping ---
 
 export const DOMAIN_COLORS: Record<ConceptDomain, string> = {
-  math: "#06b6d4", // cyan-500
-  science: "#8b5cf6", // violet-500
-  art: "#f59e0b", // amber-500
-  music: "#ec4899", // pink-500
-  language: "#10b981", // emerald-500
-  logic: "#3b82f6", // blue-500
+  math: "#ffffff",
+  science: "#ffffff",
+  art: "#ffffff",
+  music: "#ffffff",
+  language: "#ffffff",
+  logic: "#ffffff",
 };
 
 export const DOMAIN_LABELS: Record<ConceptDomain, string> = {

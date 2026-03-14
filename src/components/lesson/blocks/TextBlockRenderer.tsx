@@ -21,7 +21,7 @@ function parseMarkdown(content: string): React.ReactNode[] {
       elements.push(
         <h1
           key={key++}
-          className="text-2xl font-bold text-slate-100 tracking-tight mb-2"
+          className="text-2xl font-bold text-white text-glow-subtle tracking-tight mb-2"
         >
           {parseInline(line.slice(2))}
         </h1>
@@ -30,7 +30,7 @@ function parseMarkdown(content: string): React.ReactNode[] {
     }
     if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={key++} className="text-xl font-semibold text-slate-200 mb-2">
+        <h2 key={key++} className="text-xl font-semibold text-white/80 mb-2">
           {parseInline(line.slice(3))}
         </h2>
       );
@@ -39,7 +39,7 @@ function parseMarkdown(content: string): React.ReactNode[] {
 
     // Regular paragraph
     elements.push(
-      <p key={key++} className="text-base text-slate-300 leading-relaxed">
+      <p key={key++} className="text-base text-white/70 leading-relaxed">
         {parseInline(line)}
       </p>
     );
@@ -66,14 +66,14 @@ function parseInline(text: string): React.ReactNode[] {
     if (match[2]) {
       // Bold
       parts.push(
-        <strong key={key++} className="font-semibold text-slate-100">
+        <strong key={key++} className="font-semibold text-white/90">
           {match[2]}
         </strong>
       );
     } else if (match[3]) {
       // Italic
       parts.push(
-        <em key={key++} className="italic text-slate-200">
+        <em key={key++} className="italic text-white/80">
           {match[3]}
         </em>
       );
@@ -93,9 +93,9 @@ function parseInline(text: string): React.ReactNode[] {
 const STYLE_CLASSES: Record<string, string> = {
   heading: "",
   body: "",
-  hint: "border-l-2 border-amber-500/50 pl-4 bg-amber-500/5 py-3 rounded-r-lg",
+  hint: "border-l-2 border-white/20 pl-4 bg-white/3 py-3 rounded-r-lg",
   callout:
-    "border-l-2 border-cyan-500/50 pl-4 bg-cyan-500/5 py-3 rounded-r-lg",
+    "border-l-2 border-white/15 pl-4 bg-white/3 py-3 rounded-r-lg",
 };
 
 interface Props {

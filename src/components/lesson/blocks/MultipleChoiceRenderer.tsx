@@ -37,7 +37,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
       className="space-y-5"
     >
       {/* Question */}
-      <p className="text-base text-slate-200 font-medium leading-relaxed">
+      <p className="text-base text-white/80 font-medium leading-relaxed">
         {block.question}
       </p>
 
@@ -67,12 +67,12 @@ export default function MultipleChoiceRenderer({ block }: Props) {
                 transition-all duration-200
                 ${
                   isCorrect
-                    ? "border-emerald-500/60 bg-emerald-500/10"
+                    ? "border-white/50 bg-white/8"
                     : isWrong
                     ? "border-red-500/60 bg-red-500/10"
                     : isSelected
-                    ? "border-cyan-500/60 bg-cyan-500/10"
-                    : "border-slate-700/50 bg-slate-800/40 hover:border-slate-600 hover:bg-slate-800/60"
+                    ? "border-white/30 bg-white/6"
+                    : "border-white/8 bg-white/3 hover:border-white/20 hover:bg-white/5"
                 }
                 ${validation === "correct" ? "pointer-events-none" : "cursor-pointer"}
               `}
@@ -84,12 +84,12 @@ export default function MultipleChoiceRenderer({ block }: Props) {
                   flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold flex-shrink-0
                   ${
                     isCorrect
-                      ? "bg-emerald-500/20 text-emerald-400"
+                      ? "bg-white/15 text-white"
                       : isWrong
                       ? "bg-red-500/20 text-red-400"
                       : isSelected
-                      ? "bg-cyan-500/20 text-cyan-400"
-                      : "bg-slate-700/50 text-slate-500"
+                      ? "bg-white/12 text-white/90"
+                      : "bg-white/5 text-white/30"
                   }
                 `}
               >
@@ -100,12 +100,12 @@ export default function MultipleChoiceRenderer({ block }: Props) {
               <span
                 className={`text-sm font-medium flex-1 ${
                   isCorrect
-                    ? "text-emerald-300"
+                    ? "text-white"
                     : isWrong
                     ? "text-red-300"
                     : isSelected
-                    ? "text-cyan-200"
-                    : "text-slate-300"
+                    ? "text-white/90"
+                    : "text-white/60"
                 }`}
               >
                 {option.text}
@@ -118,7 +118,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                   >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <CheckCircle2 className="w-5 h-5 text-white" />
                   </motion.div>
                 )}
                 {isWrong && (
@@ -141,7 +141,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
           <Button
             onClick={handleSubmit}
             size="sm"
-            className="bg-cyan-600 hover:bg-cyan-500 text-white"
+            className="bg-white hover:bg-white/90 text-black"
             disabled={!selectedId}
           >
             <Send className="w-3.5 h-3.5 mr-1.5" />
@@ -154,7 +154,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-emerald-400"
+              className="flex items-center gap-2 text-white"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="text-sm font-medium">Correct!</span>

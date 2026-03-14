@@ -32,15 +32,14 @@ function formatTime(seconds: number): string {
 }
 
 function StruggleBar({ score }: { score: number }) {
-  // Color coding: low = red, medium = amber, high = green
   const color =
     score >= 0.7
-      ? "#10b981"
+      ? "rgba(255,255,255,0.9)"
       : score >= 0.4
-      ? "#f59e0b"
+      ? "rgba(255,255,255,0.55)"
       : score > 0
-      ? "#ef4444"
-      : "#334155";
+      ? "rgba(255,255,255,0.25)"
+      : "rgba(255,255,255,0.08)";
   const label =
     score >= 0.7
       ? "Deep Focus"
@@ -52,7 +51,7 @@ function StruggleBar({ score }: { score: number }) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+      <div className="flex-1 h-px bg-white/8 rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${score * 100}%` }}
@@ -61,7 +60,7 @@ function StruggleBar({ score }: { score: number }) {
           style={{ backgroundColor: color }}
         />
       </div>
-      <span className="text-xs text-slate-500 w-16 text-right">{label}</span>
+      <span className="text-xs text-white/30 w-16 text-right">{label}</span>
     </div>
   );
 }
@@ -137,32 +136,30 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] text-slate-200">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0a0e1a] to-slate-950 fixed" />
-
+    <main className="min-h-screen bg-black text-white">
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-2 text-white/35 hover:text-white/70 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="h-5 w-px bg-slate-800" />
+            <div className="h-5 w-px bg-white/10" />
             <div>
-              <h1 className="text-xl font-bold text-slate-100">
+              <h1 className="text-xl font-bold text-white text-glow-subtle">
                 Teacher Dashboard
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-white/35">
                 Productive Struggle Analytics
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/60 border border-slate-700/40">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-xs text-slate-400">Demo Student</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
+            <span className="text-xs text-white/40">Demo Student</span>
           </div>
         </div>
 
@@ -205,16 +202,15 @@ export default function TeacherDashboard() {
             <motion.div
               key={card.label}
               variants={fadeUp}
-              className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-4 space-y-2"
+              className="bg-black border border-white/8 rounded-xl p-4 space-y-2"
             >
               <card.icon
-                className="w-5 h-5"
-                style={{ color: card.color }}
+                className="w-5 h-5 text-white/50"
               />
-              <div className="text-2xl font-bold font-mono text-slate-100">
+              <div className="text-2xl font-bold font-mono text-white">
                 {card.value}
               </div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">
+              <div className="text-[10px] text-white/30 uppercase tracking-widest">
                 {card.label}
               </div>
             </motion.div>
@@ -226,25 +222,25 @@ export default function TeacherDashboard() {
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-5 mb-6"
+          className="bg-black border border-white/8 rounded-xl p-5 mb-6"
         >
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-4 h-4 text-slate-400" />
-            <h2 className="text-sm font-semibold text-slate-200">
+            <TrendingUp className="w-4 h-4 text-white/40" />
+            <h2 className="text-sm font-semibold text-white/80">
               Knowledge Progress
             </h2>
           </div>
 
           {/* Overall bar */}
           <div className="space-y-1 mb-5">
-            <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
+            <div className="w-full h-px bg-white/8 rounded-full overflow-hidden flex">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{
                   width: `${(masteredCount / concepts.length) * 100}%`,
                 }}
                 transition={{ duration: 1, ease: "easeOut" }}
-                className="h-full bg-emerald-500 rounded-l-full"
+                className="h-full bg-white rounded-l-full"
               />
               <motion.div
                 initial={{ width: 0 }}
@@ -252,10 +248,10 @@ export default function TeacherDashboard() {
                   width: `${(unlockedCount / concepts.length) * 100}%`,
                 }}
                 transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                className="h-full bg-amber-500"
+                className="h-full bg-white/40"
               />
             </div>
-            <div className="flex justify-between text-xs text-slate-500">
+            <div className="flex justify-between text-xs text-white/30">
               <span>
                 {masteredCount} mastered · {unlockedCount} in progress
               </span>
@@ -270,29 +266,25 @@ export default function TeacherDashboard() {
             {domainStats.map((d) => (
               <div
                 key={d.domain}
-                className="bg-slate-800/40 rounded-lg p-3 space-y-2 border border-slate-700/20"
+                className="bg-white/4 rounded-lg p-3 space-y-2 border border-white/6"
               >
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: DOMAIN_COLORS[d.domain] }}
-                  />
-                  <span className="text-xs font-medium text-slate-300">
+                  <div className="w-2 h-2 rounded-full bg-white/60" />
+                  <span className="text-xs font-medium text-white/70">
                     {DOMAIN_LABELS[d.domain]}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                <div className="flex items-center gap-2 text-[10px] text-white/30">
                   <span>
                     {d.mastered}/{d.count} mastered
                   </span>
                   {d.time > 0 && <span>· {formatTime(d.time)}</span>}
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-px bg-white/8 rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-all bg-white"
                     style={{
                       width: `${(d.mastered / d.count) * 100}%`,
-                      backgroundColor: DOMAIN_COLORS[d.domain],
                     }}
                   />
                 </div>
@@ -306,22 +298,22 @@ export default function TeacherDashboard() {
           variants={fadeUp}
           initial="hidden"
           animate="show"
-          className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-5"
+          className="bg-black border border-white/8 rounded-xl p-5"
         >
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-slate-400" />
-            <h2 className="text-sm font-semibold text-slate-200">
+            <Activity className="w-4 h-4 text-white/40" />
+            <h2 className="text-sm font-semibold text-white/80">
               Productive Struggle by Concept
             </h2>
           </div>
 
           {conceptMetrics.length === 0 ? (
             <div className="text-center py-12">
-              <Brain className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">
+              <Brain className="w-10 h-10 text-white/15 mx-auto mb-3" />
+              <p className="text-sm text-white/35">
                 No lessons completed yet.
               </p>
-              <p className="text-xs text-slate-600 mt-1">
+              <p className="text-xs text-white/20 mt-1">
                 Complete lessons to see analytics here.
               </p>
             </div>
@@ -336,22 +328,19 @@ export default function TeacherDashboard() {
                     key={metrics.conceptId}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-slate-800/30 border border-slate-700/20 rounded-lg p-4"
+                    className="bg-white/4 border border-white/6 rounded-lg p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2.5">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                        <span className="text-sm font-medium text-slate-200">
+                        <div className="w-2 h-2 rounded-full bg-white/60" />
+                        <span className="text-sm font-medium text-white/80">
                           {concept.title}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/6 text-white/35">
                           {DOMAIN_LABELS[concept.domain]}
                         </span>
                       </div>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-white/30">
                         {metrics.sessionsCompleted} session
                         {metrics.sessionsCompleted !== 1 ? "s" : ""}
                       </span>
@@ -362,19 +351,19 @@ export default function TeacherDashboard() {
 
                     {/* Metric pills */}
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/4 px-2 py-1 rounded-full">
                         <Clock className="w-3 h-3" />
                         {formatTime(metrics.totalTimeSeconds)}
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/4 px-2 py-1 rounded-full">
                         <Target className="w-3 h-3" />
                         {metrics.totalAttempts} attempts
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/4 px-2 py-1 rounded-full">
                         <Zap className="w-3 h-3" />
                         {metrics.totalInteractions} interactions
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-800/50 px-2 py-1 rounded-full">
+                      <div className="flex items-center gap-1 text-[10px] text-white/30 bg-white/4 px-2 py-1 rounded-full">
                         <Clock className="w-3 h-3" />
                         ~{metrics.averageTimePerSlide}s/slide
                       </div>

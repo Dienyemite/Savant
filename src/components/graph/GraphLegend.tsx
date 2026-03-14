@@ -24,30 +24,30 @@ export default function GraphLegend() {
   const totalCount = concepts.length;
 
   return (
-    <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-700/50 rounded-2xl p-4 space-y-4 min-w-[200px]">
+    <div className="absolute top-4 left-4 z-10 bg-black border border-white/10 rounded-2xl p-4 space-y-4 min-w-[200px] glow-border">
       {/* Title */}
       <div>
-        <h2 className="text-base font-bold text-slate-100 tracking-tight">
+        <h2 className="text-sm font-bold text-white text-glow-subtle tracking-widest uppercase">
           Knowledge Constellation
         </h2>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {masteredCount}/{totalCount} concepts mastered
+        <p className="text-xs text-white/35 mt-0.5">
+          {masteredCount}/{totalCount} mastered
         </p>
       </div>
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden flex">
+        <div className="w-full h-px bg-white/8 rounded-full overflow-hidden flex">
           <div
-            className="h-full bg-emerald-500 transition-all duration-500"
+            className="h-full bg-white transition-all duration-500"
             style={{ width: `${(masteredCount / totalCount) * 100}%` }}
           />
           <div
-            className="h-full bg-amber-500 transition-all duration-500"
+            className="h-full bg-white/35 transition-all duration-500"
             style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-slate-600">
+        <div className="flex justify-between text-[10px] text-white/25">
           <span>{masteredCount} mastered</span>
           <span>{unlockedCount} in progress</span>
         </div>
@@ -55,7 +55,7 @@ export default function GraphLegend() {
 
       {/* Domain legend */}
       <div className="space-y-1.5">
-        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">
           Domains
         </span>
         <div className="grid grid-cols-2 gap-1.5">
@@ -64,14 +64,11 @@ export default function GraphLegend() {
             if (count === 0) return null;
             return (
               <div key={domain} className="flex items-center gap-1.5">
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: DOMAIN_COLORS[domain] }}
-                />
-                <span className="text-[11px] text-slate-400 truncate">
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-white/50" />
+                <span className="text-[11px] text-white/50 truncate">
                   {DOMAIN_LABELS[domain]}
                 </span>
-                <span className="text-[10px] text-slate-600 ml-auto">
+                <span className="text-[10px] text-white/25 ml-auto">
                   {count}
                 </span>
               </div>
@@ -82,21 +79,21 @@ export default function GraphLegend() {
 
       {/* Status legend */}
       <div className="space-y-1.5">
-        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-widest">
           Status
         </span>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[11px] text-slate-400">Mastered</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+            <span className="text-[11px] text-white/50">Mastered</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="text-[11px] text-slate-400">Unlocked</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-white/45 animate-pulse" />
+            <span className="text-[11px] text-white/50">Unlocked</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-slate-600" />
-            <span className="text-[11px] text-slate-400">Locked</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-white/15" />
+            <span className="text-[11px] text-white/50">Locked</span>
           </div>
         </div>
       </div>

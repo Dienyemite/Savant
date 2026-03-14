@@ -43,7 +43,7 @@ export default function InteractiveSliderRenderer({ block }: Props) {
     >
       {/* Label */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-300">
+        <span className="text-sm font-medium text-white/70">
           {block.label}
         </span>
         <motion.span
@@ -57,12 +57,12 @@ export default function InteractiveSliderRenderer({ block }: Props) {
                 ? "#34d399"
                 : validation === "incorrect"
                 ? "#f87171"
-                : "#e2e8f0",
+                : "#ffffff",
           }}
         >
           {currentValue}
           {block.unit && (
-            <span className="text-sm font-normal text-slate-500 ml-1.5">
+            <span className="text-sm font-normal text-white/35 ml-1.5">
               {block.unit}
             </span>
           )}
@@ -91,13 +91,13 @@ export default function InteractiveSliderRenderer({ block }: Props) {
                     ? "#34d39930"
                     : validation === "incorrect"
                     ? "#f8717130"
-                    : "#06b6d420",
+                    : "rgba(255,255,255,0.07)",
                 border: `1px solid ${
                   validation === "correct"
                     ? "#34d39960"
                     : validation === "incorrect"
                     ? "#f8717160"
-                    : "#06b6d440"
+                    : "rgba(255,255,255,0.15)"
                 }`,
               }}
             />
@@ -117,8 +117,8 @@ export default function InteractiveSliderRenderer({ block }: Props) {
           className="[&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:border-2"
         />
         <div className="flex justify-between mt-1.5">
-          <span className="text-[10px] text-slate-600">{block.min}</span>
-          <span className="text-[10px] text-slate-600">{block.max}</span>
+          <span className="text-[10px] text-white/20">{block.min}</span>
+          <span className="text-[10px] text-white/20">{block.max}</span>
         </div>
       </div>
 
@@ -128,7 +128,7 @@ export default function InteractiveSliderRenderer({ block }: Props) {
           <Button
             onClick={handleSubmit}
             size="sm"
-            className="bg-cyan-600 hover:bg-cyan-500 text-white"
+            className="bg-white hover:bg-white/90 text-black"
           >
             <Send className="w-3.5 h-3.5 mr-1.5" />
             Check Answer
@@ -140,7 +140,7 @@ export default function InteractiveSliderRenderer({ block }: Props) {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-emerald-400"
+              className="flex items-center gap-2 text-white"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="text-sm font-medium">Correct!</span>

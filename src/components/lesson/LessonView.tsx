@@ -136,23 +136,21 @@ export default function LessonView() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-[#0a0e1a]"
+      className="fixed inset-0 z-50 bg-black"
     >
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-[#0a0e1a] to-slate-950" />
 
       {/* Content wrapper */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Top bar */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
+        <header className="flex items-center justify-between px-6 py-4 border-b border-white/8">
           <div className="flex items-center gap-4">
             <button
               onClick={handleExit}
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-2 text-white/35 hover:text-white/70 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="h-5 w-px bg-slate-800" />
+            <div className="h-5 w-px bg-white/10" />
             {concept && (
               <Badge
                 variant="outline"
@@ -165,24 +163,24 @@ export default function LessonView() {
                 {DOMAIN_LABELS[concept.domain]}
               </Badge>
             )}
-            <span className="text-sm font-semibold text-slate-200">
+            <span className="text-sm font-semibold text-white/80">
               {activeLesson.title}
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1.5 text-xs text-white/35">
               <Clock className="w-3.5 h-3.5" />
               {formatTime(elapsedSeconds)}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-white/35">
                 {currentSlideIndex + 1} / {totalSlides}
               </span>
               <div className="w-32">
                 <Progress
                   value={progress * 100}
-                  className="h-1.5 bg-slate-800"
+                  className="h-1.5"
                 />
               </div>
             </div>
@@ -207,7 +205,7 @@ export default function LessonView() {
                 }}
                 className="w-full max-w-2xl"
               >
-                <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-8 backdrop-blur-sm">
+                <div className="bg-black border border-white/8 rounded-2xl p-8">
                   {currentBlock && (
                     <LessonBlockRenderer block={currentBlock} />
                   )}
@@ -283,10 +281,10 @@ export default function LessonView() {
                   transition={{ delay: 0.5, duration: 0.5 }}
                   className="space-y-2"
                 >
-                  <h2 className="text-2xl font-bold text-slate-100">
+                  <h2 className="text-2xl font-bold text-white text-glow-subtle">
                     Concept Mastered
                   </h2>
-                  <p className="text-slate-400">
+                  <p className="text-white/50">
                     You&apos;ve completed{" "}
                     <span
                       className="font-medium"
@@ -350,13 +348,13 @@ export default function LessonView() {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.9 + i * 0.1 }}
-                      className="bg-slate-800/40 rounded-xl p-3 space-y-1 border border-slate-700/30"
+                      className="bg-white/5 rounded-xl p-3 space-y-1 border border-white/8"
                     >
-                      <stat.icon className="w-3.5 h-3.5 text-slate-500 mx-auto" />
-                      <div className="text-base font-bold text-slate-200 font-mono">
+                      <stat.icon className="w-3.5 h-3.5 text-white/30 mx-auto" />
+                      <div className="text-base font-bold text-white/90 font-mono">
                         {stat.value}
                       </div>
-                      <div className="text-[9px] text-slate-500 uppercase tracking-wider">
+                      <div className="text-[9px] text-white/30 uppercase tracking-wider">
                         {stat.label}
                       </div>
                     </motion.div>
@@ -369,14 +367,11 @@ export default function LessonView() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.4, duration: 0.5 }}
-                    className="bg-slate-800/30 border border-slate-700/30 rounded-xl px-4 py-3 space-y-2"
+                    className="bg-white/3 border border-white/10 rounded-xl px-4 py-3 space-y-2"
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <Sparkles
-                        className="w-4 h-4"
-                        style={{ color: domainColor }}
-                      />
-                      <span className="text-xs font-semibold text-slate-300">
+                      <Sparkles className="w-4 h-4 text-white/50" />
+                      <span className="text-xs font-semibold text-white/60">
                         New Paths Unlocked
                       </span>
                     </div>
@@ -421,11 +416,7 @@ export default function LessonView() {
                 >
                   <Button
                     onClick={handleExit}
-                    className="w-full font-semibold"
-                    style={{
-                      backgroundColor: domainColor,
-                      color: "#0f172a",
-                    }}
+                    className="w-full font-semibold bg-white text-black hover:bg-white/90"
                   >
                     Return to Constellation
                   </Button>
@@ -437,7 +428,7 @@ export default function LessonView() {
 
         {/* Bottom navigation */}
         {!isLessonComplete && (
-          <footer className="flex items-center justify-between px-6 py-4 border-t border-slate-800/50">
+          <footer className="flex items-center justify-between px-6 py-4 border-t border-white/8">
             {/* Slide dots */}
             <div className="flex items-center gap-1.5">
               {Array.from({ length: totalSlides }).map((_, i) => (
@@ -452,7 +443,7 @@ export default function LessonView() {
                   }`}
                   style={{
                     backgroundColor:
-                      i <= currentSlideIndex ? domainColor : "#334155",
+                      i <= currentSlideIndex ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.12)",
                   }}
                 />
               ))}
@@ -465,7 +456,7 @@ export default function LessonView() {
                 variant="ghost"
                 size="sm"
                 disabled={currentSlideIndex === 0}
-                className="text-slate-400 hover:text-slate-200 disabled:opacity-30"
+                className="text-white/35 hover:text-white/70 disabled:opacity-30"
               >
                 <ArrowLeft className="w-4 h-4 mr-1.5" />
                 Back
@@ -476,11 +467,7 @@ export default function LessonView() {
                   onClick={handleComplete}
                   size="sm"
                   disabled={!canAdvance()}
-                  className="font-semibold disabled:opacity-40"
-                  style={{
-                    backgroundColor: canAdvance() ? domainColor : undefined,
-                    color: canAdvance() ? "#0f172a" : undefined,
-                  }}
+                  className="font-semibold bg-white text-black hover:bg-white/90 disabled:opacity-40"
                 >
                   <Trophy className="w-4 h-4 mr-1.5" />
                   Complete
@@ -490,11 +477,7 @@ export default function LessonView() {
                   onClick={nextSlide}
                   size="sm"
                   disabled={!canAdvance()}
-                  className="font-semibold disabled:opacity-40"
-                  style={{
-                    backgroundColor: canAdvance() ? domainColor : undefined,
-                    color: canAdvance() ? "#0f172a" : undefined,
-                  }}
+                  className="font-semibold bg-white text-black hover:bg-white/90 disabled:opacity-40"
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-1.5" />

@@ -99,7 +99,7 @@ export default function KnowledgeGraph() {
               ? color
               : isActive
               ? color
-              : "#334155",
+              : "rgba(255,255,255,0.08)",
             strokeWidth: isFreshBridge ? 3 : isActive ? 2 : 1,
             opacity: isFreshBridge ? 1 : isActive ? 0.8 : 0.3,
             filter: isFreshBridge
@@ -148,20 +148,21 @@ export default function KnowledgeGraph() {
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1}
-          color="#1e293b"
+          color="rgba(255,255,255,0.04)"
         />
         <Controls
-          className="!bg-slate-800/90 !border-slate-700 !rounded-xl !shadow-xl [&>button]:!bg-slate-700 [&>button]:!border-slate-600 [&>button]:!text-slate-300 [&>button:hover]:!bg-slate-600"
+          className="!bg-black !border-white/10 !rounded-xl !shadow-xl [&>button]:!bg-black [&>button]:!border-white/10 [&>button]:!text-white/50 [&>button:hover]:!bg-white/8"
           showInteractive={false}
         />
         <MiniMap
-          className="!bg-slate-900/90 !border-slate-700 !rounded-xl"
+          className="!bg-black !border-white/10 !rounded-xl"
           nodeColor={(node) => {
             const data = node.data as ConceptNodeData;
-            if (data.status === "locked") return "#334155";
-            return DOMAIN_COLORS[data.domain] ?? "#64748b";
+            if (data.status === "locked") return "rgba(255,255,255,0.1)";
+            if (data.status === "unlocked") return "rgba(255,255,255,0.5)";
+            return "#ffffff";
           }}
-          maskColor="rgba(0, 0, 0, 0.7)"
+          maskColor="rgba(0, 0, 0, 0.75)"
         />
       </ReactFlow>
     </div>

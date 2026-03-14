@@ -34,42 +34,42 @@ function LessonBlockPreview({ block }: { block: LessonBlock }) {
   switch (block.type) {
     case "text":
       return (
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <BookOpen className="w-3 h-3" />
           <span>Reading</span>
         </div>
       );
     case "interactive_slider":
       return (
-        <div className="flex items-center gap-2 text-xs text-cyan-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <Layers className="w-3 h-3" />
           <span>Interactive Slider</span>
         </div>
       );
     case "drag_drop_match":
       return (
-        <div className="flex items-center gap-2 text-xs text-amber-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <Layers className="w-3 h-3" />
           <span>Drag & Drop</span>
         </div>
       );
     case "multiple_choice":
       return (
-        <div className="flex items-center gap-2 text-xs text-violet-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <Layers className="w-3 h-3" />
           <span>Multiple Choice</span>
         </div>
       );
     case "formula_builder":
       return (
-        <div className="flex items-center gap-2 text-xs text-emerald-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <Layers className="w-3 h-3" />
           <span>Formula Builder</span>
         </div>
       );
     case "visual_feedback":
       return (
-        <div className="flex items-center gap-2 text-xs text-pink-400">
+        <div className="flex items-center gap-2 text-xs text-white/40">
           <Layers className="w-3 h-3" />
           <span>Visual Feedback</span>
         </div>
@@ -102,24 +102,23 @@ function LessonCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => onLaunch(lesson, conceptId)}
-      className="group rounded-xl border border-slate-700/50 bg-slate-800/50 p-4 
-                 hover:border-slate-600 hover:bg-slate-800/80 transition-all cursor-pointer"
+      className="group rounded-xl border border-white/8 bg-black p-4
+                 hover:border-white/20 hover:bg-white/3 transition-all cursor-pointer"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span
-              className="flex items-center justify-center w-6 h-6 rounded-lg text-xs font-bold"
-              style={{ backgroundColor: `${color}20`, color }}
+              className="flex items-center justify-center w-6 h-6 rounded-lg text-xs font-bold bg-white/8 text-white/60"
             >
               {index + 1}
             </span>
-            <h4 className="text-sm font-semibold text-slate-200">
+            <h4 className="text-sm font-semibold text-white/80">
               {lesson.title}
             </h4>
           </div>
           {lesson.description && (
-            <p className="text-xs text-slate-400 leading-relaxed pl-8">
+            <p className="text-xs text-white/40 leading-relaxed pl-8">
               {lesson.description}
             </p>
           )}
@@ -131,7 +130,7 @@ function LessonCard({
           </div>
         </div>
         <ArrowRight
-          className="w-4 h-4 text-slate-600 group-hover:text-slate-400 
+          className="w-4 h-4 text-white/20 group-hover:text-white/50
                      transition-colors mt-1 flex-shrink-0"
         />
       </div>
@@ -171,20 +170,14 @@ export default function LessonModal() {
   return (
     <AnimatePresence>
       <Dialog open={isLessonModalOpen} onOpenChange={closeLessonModal}>
-        <DialogContent className="sm:max-w-[560px] bg-slate-900 border-slate-700/70 text-slate-100 p-0 overflow-hidden">
-          {/* Header with gradient accent */}
-          <div
-            className="px-6 pt-6 pb-4"
-            style={{
-              background: `linear-gradient(135deg, ${color}10 0%, transparent 60%)`,
-            }}
-          >
+        <DialogContent className="sm:max-w-[560px] bg-black border-white/15 text-white p-0 overflow-hidden glow-border">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4">
             <DialogHeader>
               <div className="flex items-center gap-3 mb-2">
                 <Badge
                   variant="outline"
-                  className="text-xs border-slate-600"
-                  style={{ color, borderColor: `${color}40` }}
+                  className="text-xs border-white/20 text-white/50"
                 >
                   {DOMAIN_LABELS[concept.domain]}
                 </Badge>
@@ -192,10 +185,10 @@ export default function LessonModal() {
                   variant="outline"
                   className={`text-xs ${
                     status === "mastered"
-                      ? "border-emerald-500/40 text-emerald-400"
+                      ? "border-white/40 text-white"
                       : status === "unlocked"
-                      ? "border-amber-500/40 text-amber-400"
-                      : "border-slate-600 text-slate-500"
+                      ? "border-white/25 text-white/60"
+                      : "border-white/10 text-white/25"
                   }`}
                 >
                   {status === "mastered" && (
@@ -205,47 +198,45 @@ export default function LessonModal() {
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Badge>
               </div>
-              <DialogTitle className="text-xl font-bold text-slate-100">
+              <DialogTitle className="text-xl font-bold text-white text-glow-subtle">
                 {concept.title}
               </DialogTitle>
-              <DialogDescription className="text-sm text-slate-400 leading-relaxed">
+              <DialogDescription className="text-sm text-white/40 leading-relaxed">
                 {concept.description}
               </DialogDescription>
             </DialogHeader>
 
             {/* Difficulty */}
             <div className="flex items-center gap-2 mt-3">
-              <span className="text-xs text-slate-500">Difficulty</span>
+              <span className="text-xs text-white/30">Difficulty</span>
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div
                     key={i}
-                    className="w-2 h-2 rounded-full"
-                    style={{
-                      backgroundColor:
-                        i < concept.difficulty ? color : "#334155",
-                    }}
+                    className={`w-2 h-2 rounded-full ${
+                      i < concept.difficulty ? "bg-white" : "bg-white/10"
+                    }`}
                   />
                 ))}
               </div>
             </div>
           </div>
 
-          <Separator className="bg-slate-700/50" />
+          <Separator className="bg-white/8" />
 
           <ScrollArea className="max-h-[400px]">
             <div className="px-6 py-4 space-y-6">
               {/* Prerequisites */}
               {prereqs.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <h3 className="text-xs font-semibold text-white/30 uppercase tracking-widest">
                     Prerequisites
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {prereqs.map((p) => (
                       <span
                         key={p.id}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700/50"
+                        className="text-xs px-2.5 py-1 rounded-lg bg-white/5 text-white/45 border border-white/8"
                       >
                         {p.title}
                       </span>
@@ -258,10 +249,10 @@ export default function LessonModal() {
               {status !== "locked" && lessons.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <h3 className="text-xs font-semibold text-white/30 uppercase tracking-widest">
                       Lessons
                     </h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-600">
+                    <div className="flex items-center gap-1 text-xs text-white/25">
                       <Clock className="w-3 h-3" />
                       {lessons.length}{" "}
                       {lessons.length === 1 ? "lesson" : "lessons"}
@@ -284,8 +275,8 @@ export default function LessonModal() {
 
               {status === "locked" && (
                 <div className="text-center py-6 space-y-3">
-                  <Lock className="w-8 h-8 mx-auto text-slate-600" />
-                  <p className="text-sm text-slate-500">
+                  <Lock className="w-8 h-8 mx-auto text-white/25" />
+                  <p className="text-sm text-white/35">
                     Complete all prerequisites to unlock this concept.
                   </p>
                 </div>
@@ -294,14 +285,14 @@ export default function LessonModal() {
               {/* Unlocks */}
               {unlocks.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <h3 className="text-xs font-semibold text-white/30 uppercase tracking-widest">
                     Unlocks
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {unlocks.map((u) => (
                       <span
                         key={u.id}
-                        className="text-xs px-2.5 py-1 rounded-lg border border-dashed border-slate-700 text-slate-500"
+                        className="text-xs px-2.5 py-1 rounded-lg border border-dashed border-white/15 text-white/30"
                       >
                         {u.title}
                       </span>
@@ -315,7 +306,7 @@ export default function LessonModal() {
           {/* Footer */}
           {status === "unlocked" && lessons.length > 0 && (
             <>
-              <Separator className="bg-slate-700/50" />
+              <Separator className="bg-white/8" />
               <div className="px-6 py-4">
                 <Button
                   onClick={() => {
@@ -323,11 +314,7 @@ export default function LessonModal() {
                       handleLaunchLesson(lessons[0], concept.id);
                     }
                   }}
-                  className="w-full font-semibold"
-                  style={{
-                    backgroundColor: color,
-                    color: "#0f172a",
-                  }}
+                  className="w-full font-semibold bg-white text-black hover:bg-white/90"
                 >
                   <BookOpen className="w-4 h-4 mr-2" />
                   Start Learning

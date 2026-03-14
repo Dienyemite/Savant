@@ -81,11 +81,11 @@ export default function DragDropMatchRenderer({ block }: Props) {
       className="space-y-5"
     >
       {/* Instruction */}
-      <p className="text-sm text-slate-300 font-medium">{block.instruction}</p>
+      <p className="text-sm text-white/70 font-medium">{block.instruction}</p>
 
       {/* Draggable items (click-to-select) */}
       <div className="space-y-2">
-        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">
           Items
         </span>
         <div className="flex flex-wrap gap-2">
@@ -103,10 +103,10 @@ export default function DragDropMatchRenderer({ block }: Props) {
                   px-4 py-2.5 rounded-xl text-sm font-medium transition-all
                   ${
                     placed
-                      ? "bg-slate-700/30 text-slate-500 border border-slate-700/30"
+                      ? "bg-white/4 text-white/25 border border-white/6"
                       : isSelected
-                      ? "bg-cyan-500/20 text-cyan-300 border-2 border-cyan-500/60 shadow-lg shadow-cyan-500/10"
-                      : "bg-slate-800 text-slate-200 border border-slate-600/50 hover:border-slate-500 cursor-pointer"
+                      ? "bg-white/12 text-white border-2 border-white/50 shadow-sm shadow-white/8"
+                      : "bg-white/5 text-white/70 border border-white/10 hover:border-white/25 cursor-pointer"
                   }
                   ${validation === "correct" ? "pointer-events-none" : ""}
                 `}
@@ -122,7 +122,7 @@ export default function DragDropMatchRenderer({ block }: Props) {
 
       {/* Drop targets */}
       <div className="space-y-2">
-        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-white/25 uppercase tracking-wider">
           Match to
         </span>
         <div className="grid gap-3">
@@ -147,20 +147,20 @@ export default function DragDropMatchRenderer({ block }: Props) {
                   transition-all text-left
                   ${
                     selectedItemId && !validation
-                      ? "border-cyan-500/40 bg-cyan-500/5 cursor-pointer hover:border-cyan-500/60"
+                      ? "border-white/25 bg-white/5 cursor-pointer hover:border-white/40"
                       : placedItem
                       ? isCorrectTarget
-                        ? "border-emerald-500/40 bg-emerald-500/5"
+                        ? "border-white/35 bg-white/6"
                         : validation === "incorrect"
                         ? "border-red-500/40 bg-red-500/5"
-                        : "border-slate-600/40 bg-slate-800/30"
-                      : "border-slate-700/40 bg-slate-800/20"
+                        : "border-white/12 bg-white/4"
+                      : "border-white/8 bg-white/2"
                   }
                   ${validation === "correct" ? "pointer-events-none" : ""}
                 `}
                 disabled={validation === "correct" || !selectedItemId}
               >
-                <span className="text-sm font-semibold text-slate-400">
+                <span className="text-sm font-semibold text-white/50">
                   {target.label}
                 </span>
 
@@ -172,10 +172,10 @@ export default function DragDropMatchRenderer({ block }: Props) {
                       exit={{ opacity: 0, scale: 0.8 }}
                       className={`text-sm px-3 py-1 rounded-lg ${
                         isCorrectTarget
-                          ? "bg-emerald-500/20 text-emerald-300"
+                          ? "bg-white/12 text-white"
                           : validation === "incorrect"
                           ? "bg-red-500/20 text-red-300"
-                          : "bg-slate-700/50 text-slate-300"
+                          : "bg-white/8 text-white/70"
                       }`}
                     >
                       {placedItem.content}
@@ -195,7 +195,7 @@ export default function DragDropMatchRenderer({ block }: Props) {
             <Button
               onClick={handleSubmit}
               size="sm"
-              className="bg-cyan-600 hover:bg-cyan-500 text-white"
+              className="bg-white hover:bg-white/90 text-black"
               disabled={!allPlaced}
             >
               <Send className="w-3.5 h-3.5 mr-1.5" />
@@ -206,7 +206,7 @@ export default function DragDropMatchRenderer({ block }: Props) {
                 onClick={handleReset}
                 size="sm"
                 variant="ghost"
-                className="text-slate-400 hover:text-slate-200"
+                className="text-white/35 hover:text-white/70"
               >
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                 Reset
@@ -220,7 +220,7 @@ export default function DragDropMatchRenderer({ block }: Props) {
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-emerald-400"
+              className="flex items-center gap-2 text-white"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="text-sm font-medium">

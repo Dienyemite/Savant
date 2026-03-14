@@ -1,16 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Savant — Deep Learning for Young Minds",
@@ -24,10 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${inter.variable} ${geistMono.variable} antialiased font-sans`}
-      >
+    <html lang="en">
+      <head>
+        <link rel="stylesheet" href="https://use.typekit.net/lmm5jjk.css" />
+      </head>
+      <body className="antialiased">
         {children}
       </body>
     </html>
