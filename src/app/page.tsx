@@ -17,48 +17,54 @@ export default function Home() {
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black notebook-ruled notebook-margin">
 
-      {/* Notebook page header — top binding strip */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between border-b border-white/[0.06] px-16 py-3">
-        {/* Page label in margin */}
-        <div className="flex items-baseline gap-3">
-          <span
-            className="text-[10px] tracking-[0.25em] uppercase text-white/20"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            I.
-          </span>
-          <span className="text-sm font-semibold tracking-widest text-white/70 uppercase">
-            Knowledge Constellation
-          </span>
-        </div>
+      {/* Left margin gutter — navigation lives in the 72px strip to the left of the margin line */}
+      <nav className="notebook-nav-margin">
+        {/* Page number / section index at top of margin */}
+        <span
+          className="text-[9px] tracking-[0.3em] text-white/20 leading-none"
+          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          I
+        </span>
 
-        <div className="flex items-center gap-6">
-          <Link
-            href="/dashboard"
-            className="text-[11px] tracking-widest uppercase text-white/25 hover:text-white/55 transition-colors border-b border-white/10 hover:border-white/30 pb-px"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Analytics
-          </Link>
-          <Link
-            href="/onboarding"
-            className="text-[11px] tracking-widest uppercase text-white/25 hover:text-white/55 transition-colors border-b border-white/10 hover:border-white/30 pb-px"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Start Path
-          </Link>
-          <div
-            className="flex items-center gap-2 text-[11px] tracking-wider text-white/20"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            <span className="inline-block w-1.5 h-1.5 border border-white/40 rounded-full" />
-            <span>Demo Student</span>
-          </div>
-        </div>
-      </header>
+        {/* Nav items — rotated 90° so they read bottom-to-top along the margin */}
+        <Link
+          href="/dashboard"
+          className="text-[9px] tracking-[0.25em] uppercase text-white/25 hover:text-white/60 transition-colors leading-none"
+          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          Analytics
+        </Link>
+        <Link
+          href="/onboarding"
+          className="text-[9px] tracking-[0.25em] uppercase text-white/25 hover:text-white/60 transition-colors leading-none"
+          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          Start Path
+        </Link>
 
-      {/* Knowledge Constellation — fills the notebook page */}
-      <div className="relative z-10 w-full h-full pt-12">
+        {/* User indicator — small dot + label */}
+        <div
+          className="flex flex-col items-center gap-1 text-[9px] tracking-wider text-white/15 leading-none mt-auto mb-6"
+          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          <span className="inline-block w-1.5 h-1.5 border border-white/30 rounded-full mb-1" style={{ writingMode: "horizontal-tb" }} />
+          Demo Student
+        </div>
+      </nav>
+
+      {/* Page title — sits in the content area near the top, aligned to the ruled lines */}
+      <div
+        className="absolute z-10 top-[18px] left-[88px] leading-none"
+        style={{ fontFamily: "'Courier New', monospace" }}
+      >
+        <span className="text-[11px] tracking-[0.3em] uppercase text-white/40">
+          Knowledge Constellation
+        </span>
+      </div>
+
+      {/* Knowledge Constellation — fills the notebook page to the right of the margin */}
+      <div className="relative z-10 w-full h-full notebook-content">
         <KnowledgeGraph />
       </div>
 

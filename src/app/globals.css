@@ -100,17 +100,18 @@
    Every surface is a page from a monochrome notebook.
    ═══════════════════════════════════════════════════ */
 
-/* Horizontal ruled lines — the primary notebook texture */
+/* Horizontal ruled lines — the primary notebook texture (matches physical notebook paper) */
 .notebook-ruled {
+  background-color: #000;
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0px,
-      transparent 31px,
-      rgba(255, 255, 255, 0.045) 31px,
-      rgba(255, 255, 255, 0.045) 32px
+      transparent 30px,
+      rgba(255, 255, 255, 0.10) 30px,
+      rgba(255, 255, 255, 0.10) 31px
     );
-  background-size: 100% 32px;
+  background-size: 100% 31px;
 }
 
 /* Grid paper variant */
@@ -133,20 +134,41 @@
   background-size: 32px 32px;
 }
 
-/* Left margin line — like a real notebook's red margin (rendered white) */
+/* Left margin line — monochrome version of the red margin line in the attached reference */
 .notebook-margin {
   position: relative;
 }
 .notebook-margin::before {
   content: '';
   position: absolute;
-  left: 56px;
+  left: 72px;
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.18);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
+}
+
+/* Content area starts after the margin */
+.notebook-content {
+  margin-left: 72px;
+  position: relative;
+}
+
+/* Margin annotation — items that live in the left gutter */
+.notebook-nav-margin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 80px;
+  gap: 28px;
+  z-index: 10;
 }
 
 /* Glow text utilities */
