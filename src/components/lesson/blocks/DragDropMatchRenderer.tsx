@@ -2,10 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { useLessonStore } from "@/store/lesson-store";
 import type { DragDropMatchBlock } from "@/types";
-import { CheckCircle2, XCircle, Send, RotateCcw } from "lucide-react";
+import { Send, RotateCcw } from "lucide-react";
 
 interface Props {
   block: DragDropMatchBlock;
@@ -100,13 +99,13 @@ export default function DragDropMatchRenderer({ block }: Props) {
                 whileHover={{ scale: validation !== "correct" ? 1.03 : 1 }}
                 whileTap={{ scale: validation !== "correct" ? 0.97 : 1 }}
                 className={`
-                  px-4 py-2.5 rounded-xl text-sm font-medium transition-all
+                  px-4 py-2.5 text-sm transition-all
                   ${
                     placed
-                      ? "bg-white/4 text-white/25 border border-white/6"
+                      ? "text-white/25 border border-white/[0.05]"
                       : isSelected
-                      ? "bg-white/12 text-white border-2 border-white/50 shadow-sm shadow-white/8"
-                      : "bg-white/5 text-white/70 border border-white/10 hover:border-white/25 cursor-pointer"
+                      ? "text-white border border-white/40"
+                      : "text-white/60 border border-white/[0.08] hover:border-white/20 cursor-pointer"
                   }
                   ${validation === "correct" ? "pointer-events-none" : ""}
                 `}
@@ -143,18 +142,18 @@ export default function DragDropMatchRenderer({ block }: Props) {
                     validation !== "correct" && selectedItemId ? 1.01 : 1,
                 }}
                 className={`
-                  flex items-center justify-between px-4 py-3 rounded-xl border-2 border-dashed 
+                  flex items-center justify-between px-4 py-3 border border-dashed
                   transition-all text-left
                   ${
                     selectedItemId && !validation
-                      ? "border-white/25 bg-white/5 cursor-pointer hover:border-white/40"
+                      ? "border-white/20 bg-white/[0.02] cursor-pointer hover:border-white/30"
                       : placedItem
                       ? isCorrectTarget
-                        ? "border-white/35 bg-white/6"
+                        ? "border-white/25 bg-white/[0.03]"
                         : validation === "incorrect"
-                        ? "border-red-500/40 bg-red-500/5"
-                        : "border-white/12 bg-white/4"
-                      : "border-white/8 bg-white/2"
+                        ? "border-white/[0.06] bg-white/[0.01]"
+                        : "border-white/[0.09] bg-white/[0.03]"
+                      : "border-white/[0.06] bg-transparent"
                   }
                   ${validation === "correct" ? "pointer-events-none" : ""}
                 `}
@@ -170,12 +169,12 @@ export default function DragDropMatchRenderer({ block }: Props) {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className={`text-sm px-3 py-1 rounded-lg ${
+                      className={`text-sm px-2 py-0.5 border ${
                         isCorrectTarget
-                          ? "bg-white/12 text-white"
+                          ? "border-white/20 text-white/70"
                           : validation === "incorrect"
-                          ? "bg-red-500/20 text-red-300"
-                          : "bg-white/8 text-white/70"
+                          ? "border-white/[0.06] text-white/25"
+                          : "border-white/[0.08] text-white/50"
                       }`}
                     >
                       {placedItem.content}
@@ -192,54 +191,47 @@ export default function DragDropMatchRenderer({ block }: Props) {
       <div className="flex items-center gap-3">
         {validation !== "correct" && (
           <>
-            <Button
+            <button
               onClick={handleSubmit}
-              size="sm"
-              className="bg-white hover:bg-white/90 text-black"
               disabled={!allPlaced}
+              className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-white/30 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors border-b border-white/10 hover:border-white/30 pb-px"
+              style={{ fontFamily: "'Courier New', monospace" }}
             >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              Check Answer
-            </Button>
+              <Send className="w-3 h-3" />
+              Check
+            </button>
             {Object.keys(mapping).length > 0 && (
-              <Button
+              <button
                 onClick={handleReset}
-                size="sm"
-                variant="ghost"
-                className="text-white/35 hover:text-white/70"
+                className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-white/20 hover:text-white/40 transition-colors pb-px"
+                style={{ fontFamily: "'Courier New', monospace" }}
               >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                <RotateCcw className="w-3 h-3" />
                 Reset
-              </Button>
+              </button>
             )}
           </>
         )}
 
         <AnimatePresence mode="wait">
           {validation === "correct" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-white"
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[11px] text-white/50 italic"
             >
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">
-                All matched correctly!
-              </span>
-            </motion.div>
+              All matched. Continue reading.
+            </motion.p>
           )}
           {validation === "incorrect" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2 text-red-400"
+              className="text-[11px] text-white/30 italic"
             >
-              <XCircle className="w-5 h-5" />
-              <span className="text-sm">
-                Some matches aren&apos;t right — try rearranging.
-              </span>
-            </motion.div>
+              Some matches are wrong — try rearranging.
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

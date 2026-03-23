@@ -3,44 +3,164 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { motion } from "framer-motion";
-import { DOMAIN_COLORS, type ProgressStatus, type ConceptDomain } from "@/types";
-import {
-  Plus,
-  Minus,
-  X,
-  Divide,
-  Percent,
-  Variable,
-  Triangle,
-  ArrowDown,
-  MoveRight,
-  Zap,
-  Music,
-  Sparkles,
-  ListOrdered,
-  Building2,
-  FlipVertical,
-  CircleDot,
-} from "lucide-react";
+import { type ProgressStatus, type ConceptDomain } from "@/types";
 
-// Map icon names to Lucide components
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Plus,
-  Minus,
-  X,
-  Divide,
-  Percent,
-  Variable,
-  Triangle,
-  ArrowDown,
-  MoveRight,
-  Zap,
-  Music,
-  Sparkles,
-  ListOrdered,
-  Building2,
-  Flip: FlipVertical,
+export interface ConceptNodeData {
+  label: string;
+  domain: ConceptDomain;
+  status: ProgressStatus;
+  icon: string | null;
+  description: string;
+  difficulty: number;
+  justMastered?: boolean;
+  justUnlocked?: boolean;
+  [key: string]: unknown;
+}
+
+type ConceptGraphNodeProps = NodeProps & {
+  data: ConceptNodeData;
 };
+
+// ════════════════════════════════════════════════════════════
+// ConceptGraphNode — Constellation dot style.
+// Each concept is a small circle with a label beneath it,
+// like handwritten annotations on a starmap / notebook page.
+//
+// Locked   → small dashed-circle, faded label
+// Unlocked → small solid hollow circle, normal label
+// Mastered → filled dot + label, subtle glow
+// ════════════════════════════════════════════════════════════
+function ConceptGraphNode({ data }: ConceptGraphNodeProps) {
+  const { label, status, justMastered, justUnlocked } = data;
+
+  const isMastered = status === "mastered";
+  const isUnlocked = status === "unlocked";
+  const isLocked = status === "locked";
+
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+      className="group relative flex flex-col items-center"
+      style={{ gap: 6 }}
+    >
+      {/* Connection handles — invisible, just structural */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-1 !h-1 !bg-transparent !border-0 !opacity-0"
+      />
+
+      {/* ── Mastery burst rings ── */}
+      {justMastered && (
+        <>
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={`burst-${i}`}
+              className="absolute rounded-full border border-white/50"
+              style={{ width: 12, height: 12, top: -2, left: -2 }}
+              initial={{ scale: 1, opacity: 0.7 }}
+              animate={{ scale: 4 + i * 2, opacity: 0 }}
+              transition={{ duration: 1.4, delay: i * 0.2, ease: "easeOut" }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* ── Fresh-unlock pulse ring ── */}
+      {justUnlocked && (
+        <motion.div
+          className="absolute rounded-full border border-white/35"
+          style={{ width: 12, height: 12, top: -2, left: -2 }}
+          animate={{ scale: [1, 2.5, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 1.6, repeat: 2, ease: "easeInOut" }}
+        />
+      )}
+
+      {/* ── Star / constellation dot ── */}
+      <div className="relative" style={{ width: 10, height: 10 }}>
+        {isMastered ? (
+          /* Mastered: filled disc */
+          <motion.div
+            className="w-full h-full rounded-full bg-white"
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              boxShadow:
+                "0 0 6px rgba(255,255,255,0.6), 0 0 14px rgba(255,255,255,0.2)",
+            }}
+          />
+        ) : isUnlocked ? (
+          /* Unlocked: hollow circle */
+          <motion.div
+            className="w-full h-full rounded-full border border-white/60 bg-transparent"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+        ) : (
+          /* Locked: dashed circle */
+          <svg width="10" height="10" viewBox="0 0 10 10" className="absolute inset-0">
+            <circle
+              cx="5" cy="5" r="4"
+              fill="none"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+            />
+          </svg>
+        )}
+      </div>
+
+      {/* ── Concept label ── */}
+      <span
+        className={`
+          text-center leading-tight select-none whitespace-nowrap
+          ${
+            isLocked
+              ? "text-white/18 text-[10px]"
+              : isMastered
+              ? "text-white/90 text-[11px] font-medium"
+              : "text-white/55 text-[10px]"
+          }
+        `}
+        style={{ fontFamily: "'ivy-presto', serif", maxWidth: 90 }}
+      >
+        {label}
+      </span>
+
+      {/* ── Hover: faint domain/status hint below label ── */}
+      {!isLocked && (
+        <span
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                     text-[9px] text-white/25 text-center whitespace-nowrap"
+          style={{ fontFamily: "'Courier New', monospace", letterSpacing: "0.08em" }}
+        >
+          {isMastered ? "mastered" : "explore →"}
+        </span>
+      )}
+
+      {/* ── Locked tooltip ── */}
+      {isLocked && (
+        <span
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                     text-[9px] text-white/20 text-center whitespace-nowrap"
+          style={{ fontFamily: "'Courier New', monospace" }}
+        >
+          locked
+        </span>
+      )}
+    </motion.div>
+  );
+}
+
+export default memo(ConceptGraphNode);
+
 
 export interface ConceptNodeData {
   label: string;

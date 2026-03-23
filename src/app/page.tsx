@@ -15,32 +15,54 @@ const KnowledgeGraph = dynamic(
 
 export default function Home() {
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-black">
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4">
-        <span className="text-xl font-bold text-white text-glow tracking-widest uppercase">
-          Savant
-        </span>
-        <div className="flex items-center gap-4">
+    <main className="relative h-screen w-screen overflow-hidden bg-black notebook-ruled notebook-margin">
+
+      {/* Notebook page header — top binding strip */}
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between border-b border-white/[0.06] px-16 py-3">
+        {/* Page label in margin */}
+        <div className="flex items-baseline gap-3">
+          <span
+            className="text-[10px] tracking-[0.25em] uppercase text-white/20"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            I.
+          </span>
+          <span className="text-sm font-semibold tracking-widest text-white/70 uppercase">
+            Knowledge Constellation
+          </span>
+        </div>
+
+        <div className="flex items-center gap-6">
           <Link
             href="/dashboard"
-            className="text-xs text-white/40 hover:text-white/80 transition-colors px-3 py-1.5 rounded-full border border-white/10 hover:border-white/25"
+            className="text-[11px] tracking-widest uppercase text-white/25 hover:text-white/55 transition-colors border-b border-white/10 hover:border-white/30 pb-px"
+            style={{ fontFamily: "'Courier New', monospace" }}
           >
-            Teacher Dashboard
+            Analytics
           </Link>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10">
-            <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
-            <span className="text-xs text-white/40">Demo Student</span>
+          <Link
+            href="/onboarding"
+            className="text-[11px] tracking-widest uppercase text-white/25 hover:text-white/55 transition-colors border-b border-white/10 hover:border-white/30 pb-px"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            Start Path
+          </Link>
+          <div
+            className="flex items-center gap-2 text-[11px] tracking-wider text-white/20"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            <span className="inline-block w-1.5 h-1.5 border border-white/40 rounded-full" />
+            <span>Demo Student</span>
           </div>
         </div>
       </header>
 
-      {/* Knowledge Graph */}
-      <div className="relative z-10 w-full h-full pt-14">
+      {/* Knowledge Constellation — fills the notebook page */}
+      <div className="relative z-10 w-full h-full pt-12">
         <KnowledgeGraph />
       </div>
 
-      {/* Overlays */}
+      {/* Overlays — panels styled as torn notebook pages / margin annotations */}
       <GraphLegend />
       <ConceptInfoPanel />
       <LessonModal />

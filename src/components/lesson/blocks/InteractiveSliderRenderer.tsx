@@ -2,11 +2,9 @@
 
 import { useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { useLessonStore, type ValidationState } from "@/store/lesson-store";
+import { useLessonStore } from "@/store/lesson-store";
 import type { InteractiveSliderBlock } from "@/types";
-import { CheckCircle2, XCircle, Send } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface Props {
   block: InteractiveSliderBlock;
@@ -19,9 +17,8 @@ export default function InteractiveSliderRenderer({ block }: Props) {
   const validation = answer.validationState;
 
   const handleChange = useCallback(
-    (value: number | readonly number[]) => {
-      const v = Array.isArray(value) ? value[0] : value;
-      setAnswer(block.id, v);
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setAnswer(block.id, Number(e.target.value));
     },
     [block.id, setAnswer]
   );
@@ -30,134 +27,121 @@ export default function InteractiveSliderRenderer({ block }: Props) {
     validateBlock(block.id);
   }, [block.id, validateBlock]);
 
-  // Generate visual dots/objects for the value
   const maxDots = Math.min(block.max, 20);
   const dotsToShow = Math.min(currentValue, maxDots);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      {/* Label */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-white/70">
+      {/* Label + current value */}
+      <div className="flex items-baseline justify-between border-b border-white/[0.05] pb-2">
+        <span
+          className="text-xs tracking-widest uppercase text-white/30"
+          style={{ fontFamily: "'Courier New', monospace" }}
+        >
           {block.label}
         </span>
         <motion.span
           key={currentValue}
-          initial={{ scale: 1.3, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-2xl font-bold font-mono tabular-nums"
-          style={{
-            color:
-              validation === "correct"
-                ? "#34d399"
-                : validation === "incorrect"
-                ? "#f87171"
-                : "#ffffff",
-          }}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xl text-white/80 tabular-nums"
+          style={{ fontFamily: "'Courier New', monospace" }}
         >
           {currentValue}
           {block.unit && (
-            <span className="text-sm font-normal text-white/35 ml-1.5">
-              {block.unit}
-            </span>
+            <span className="text-xs text-white/25 ml-1">{block.unit}</span>
           )}
         </motion.span>
       </div>
 
-      {/* Visual object representation */}
-      <div className="flex flex-wrap gap-1.5 min-h-[32px] justify-center py-2">
+      {/* Visual tally marks — monochrome square tiles */}
+      <div className="flex flex-wrap gap-1 min-h-[28px]">
         <AnimatePresence mode="popLayout">
           {Array.from({ length: dotsToShow }).map((_, i) => (
             <motion.div
               key={i}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{
-                type: "spring",
-                stiffness: 500,
-                damping: 25,
-                delay: i * 0.02,
-              }}
-              className="w-6 h-6 rounded-lg"
-              style={{
-                backgroundColor:
-                  validation === "correct"
-                    ? "#34d39930"
-                    : validation === "incorrect"
-                    ? "#f8717130"
-                    : "rgba(255,255,255,0.07)",
-                border: `1px solid ${
-                  validation === "correct"
-                    ? "#34d39960"
-                    : validation === "incorrect"
-                    ? "#f8717160"
-                    : "rgba(255,255,255,0.15)"
-                }`,
-              }}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.1, delay: i * 0.015 }}
+              className="w-5 h-5 border border-white/20 bg-white/[0.04]"
             />
           ))}
         </AnimatePresence>
       </div>
 
-      {/* Slider */}
-      <div className="px-1">
-        <Slider
-          value={[currentValue]}
+      {/* Native range input styled as a flat monochrome track */}
+      <div className="space-y-1">
+        <input
+          type="range"
+          value={currentValue}
           min={block.min}
           max={block.max}
           step={block.step}
-          onValueChange={handleChange}
+          onChange={handleChange}
           disabled={validation === "correct"}
-          className="[&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:border-2"
+          className="w-full h-px appearance-none bg-white/20 cursor-pointer disabled:opacity-40
+            [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:w-3
+            [&::-webkit-slider-thumb]:h-3
+            [&::-webkit-slider-thumb]:bg-white
+            [&::-webkit-slider-thumb]:border-0
+            [&::-webkit-slider-runnable-track]:h-px
+            [&::-webkit-slider-runnable-track]:bg-white/20"
         />
-        <div className="flex justify-between mt-1.5">
-          <span className="text-[10px] text-white/20">{block.min}</span>
-          <span className="text-[10px] text-white/20">{block.max}</span>
+        <div className="flex justify-between">
+          <span
+            className="text-[9px] text-white/20"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            {block.min}
+          </span>
+          <span
+            className="text-[9px] text-white/20"
+            style={{ fontFamily: "'Courier New', monospace" }}
+          >
+            {block.max}
+          </span>
         </div>
       </div>
 
-      {/* Submit / Feedback */}
-      <div className="flex items-center gap-3">
+      {/* Submit / feedback */}
+      <div className="flex items-center gap-4">
         {validation !== "correct" && (
-          <Button
+          <button
             onClick={handleSubmit}
-            size="sm"
-            className="bg-white hover:bg-white/90 text-black"
+            className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-white/30 hover:text-white/60 transition-colors border-b border-white/10 hover:border-white/30 pb-px"
+            style={{ fontFamily: "'Courier New', monospace" }}
           >
-            <Send className="w-3.5 h-3.5 mr-1.5" />
-            Check Answer
-          </Button>
+            <Send className="w-3 h-3" />
+            Check
+          </button>
         )}
 
         <AnimatePresence mode="wait">
           {validation === "correct" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-white"
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[11px] text-white/50 italic"
             >
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">Correct!</span>
-            </motion.div>
+              Correct. Continue reading.
+            </motion.p>
           )}
           {validation === "incorrect" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2 text-red-400"
+              className="text-[11px] text-white/30 italic"
             >
-              <XCircle className="w-5 h-5" />
-              <span className="text-sm">
-                Not quite — try adjusting the slider.
-              </span>
-            </motion.div>
+              Not quite — adjust and try again.
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

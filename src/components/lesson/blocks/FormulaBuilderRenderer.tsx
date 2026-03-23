@@ -2,10 +2,9 @@
 
 import { useCallback } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { useLessonStore } from "@/store/lesson-store";
 import type { FormulaBuilderBlock } from "@/types";
-import { CheckCircle2, XCircle, Send, RotateCcw, X } from "lucide-react";
+import { Send, RotateCcw, X } from "lucide-react";
 
 interface Props {
   block: FormulaBuilderBlock;
@@ -63,16 +62,16 @@ export default function FormulaBuilderRenderer({ block }: Props) {
       {/* Formula building area */}
       <div
         className={`
-          min-h-[64px] flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed 
+          min-h-[64px] flex flex-wrap items-center gap-2 px-4 py-3 border border-dashed
           transition-all
           ${
             validation === "correct"
-              ? "border-white/35 bg-white/5"
+              ? "border-white/20 bg-white/[0.02]"
               : validation === "incorrect"
-              ? "border-red-500/40 bg-red-500/5"
+              ? "border-white/[0.08] bg-white/[0.01]"
               : tokens.length > 0
-              ? "border-white/12 bg-white/4"
-              : "border-white/8 bg-white/2"
+              ? "border-white/[0.1] bg-transparent"
+              : "border-white/[0.05] bg-transparent"
           }
         `}
       >
@@ -97,12 +96,12 @@ export default function FormulaBuilderRenderer({ block }: Props) {
                 exit={{ scale: 0, opacity: 0 }}
                 whileDrag={{ scale: 1.1, zIndex: 10 }}
                 className={`
-                  group flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-mono font-semibold
-                  cursor-grab active:cursor-grabbing select-none
+                  group flex items-center gap-1 px-3 py-1.5 text-sm font-mono font-semibold
+                  cursor-grab active:cursor-grabbing select-none border
                   ${
                     validation === "correct"
-                      ? "bg-white/12 text-white pointer-events-none"
-                      : "bg-white/8 text-white/80 hover:bg-white/12"
+                      ? "border-white/15 text-white/70 pointer-events-none"
+                      : "border-white/[0.08] text-white/70 hover:border-white/20"
                   }
                 `}
               >
@@ -138,12 +137,12 @@ export default function FormulaBuilderRenderer({ block }: Props) {
               whileTap={{ scale: validation !== "correct" ? 0.95 : 1 }}
               disabled={validation === "correct"}
               className={`
-                px-3 py-1.5 rounded-lg text-sm font-mono font-medium
+                px-3 py-1.5 text-sm font-mono
                 border transition-all
                 ${
                   validation === "correct"
-                    ? "bg-white/3 text-white/20 border-white/6 pointer-events-none"
-                    : "bg-white/5 text-white/60 border-white/10 hover:border-white/30 hover:bg-white/8 cursor-pointer"
+                    ? "text-white/20 border-white/[0.05] pointer-events-none"
+                    : "text-white/55 border-white/[0.08] hover:border-white/25 cursor-pointer"
                 }
               `}
             >
@@ -157,52 +156,47 @@ export default function FormulaBuilderRenderer({ block }: Props) {
       <div className="flex items-center gap-3">
         {validation !== "correct" && (
           <>
-            <Button
+            <button
               onClick={handleSubmit}
-              size="sm"
-              className="bg-white hover:bg-white/90 text-black"
               disabled={tokens.length === 0}
+              className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-white/30 hover:text-white/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors border-b border-white/10 hover:border-white/30 pb-px"
+              style={{ fontFamily: "'Courier New', monospace" }}
             >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              Check Formula
-            </Button>
+              <Send className="w-3 h-3" />
+              Check
+            </button>
             {tokens.length > 0 && (
-              <Button
+              <button
                 onClick={handleReset}
-                size="sm"
-                variant="ghost"
-                className="text-white/35 hover:text-white/70"
+                className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-white/20 hover:text-white/40 transition-colors pb-px"
+                style={{ fontFamily: "'Courier New', monospace" }}
               >
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                <RotateCcw className="w-3 h-3" />
                 Clear
-              </Button>
+              </button>
             )}
           </>
         )}
 
         <AnimatePresence mode="wait">
           {validation === "correct" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 text-white"
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[11px] text-white/50 italic"
             >
-              <CheckCircle2 className="w-5 h-5" />
-              <span className="text-sm font-medium">Formula correct!</span>
-            </motion.div>
+              Formula correct. Continue reading.
+            </motion.p>
           )}
           {validation === "incorrect" && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-2 text-red-400"
+              className="text-[11px] text-white/30 italic"
             >
-              <XCircle className="w-5 h-5" />
-              <span className="text-sm">
-                Not the right order — try rearranging or changing tokens.
-              </span>
-            </motion.div>
+              Not the right order — try rearranging.
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

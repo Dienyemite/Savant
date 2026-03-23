@@ -21,7 +21,7 @@ function parseMarkdown(content: string): React.ReactNode[] {
       elements.push(
         <h1
           key={key++}
-          className="text-2xl font-bold text-white text-glow-subtle tracking-tight mb-2"
+          className="text-xl font-semibold text-white/80 tracking-tight mb-3 border-b border-white/[0.07] pb-2"
         >
           {parseInline(line.slice(2))}
         </h1>
@@ -93,9 +93,8 @@ function parseInline(text: string): React.ReactNode[] {
 const STYLE_CLASSES: Record<string, string> = {
   heading: "",
   body: "",
-  hint: "border-l-2 border-white/20 pl-4 bg-white/3 py-3 rounded-r-lg",
-  callout:
-    "border-l-2 border-white/15 pl-4 bg-white/3 py-3 rounded-r-lg",
+  hint: "border-l border-white/15 pl-4 py-2 text-white/50 italic",
+  callout: "border-l border-white/[0.08] pl-4 py-2 text-white/40",
 };
 
 interface Props {

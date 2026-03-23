@@ -5,7 +5,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   type Node,
@@ -18,7 +17,6 @@ import "@xyflow/react/dist/style.css";
 
 import ConceptGraphNode, { type ConceptNodeData } from "./ConceptNode";
 import { useGraphStore } from "@/store/graph-store";
-import { DOMAIN_COLORS } from "@/types";
 
 // Register custom node types
 const nodeTypes = {
@@ -68,47 +66,35 @@ export default function KnowledgeGraph() {
     [concepts, progressMap, recentlyMasteredId, recentlyUnlockedIds]
   );
 
-  // Build React Flow edges from prerequisites
+  // Build React Flow edges from prerequisites — strictly monochrome constellation lines
   const initialEdges: Edge[] = useMemo(
     () =>
       prerequisites.map((prereq) => {
-        const sourceConcept = concepts.find(
-          (c) => c.id === prereq.prerequisite_id
-        );
         const sourceStatus = progressMap.get(prereq.prerequisite_id);
         const targetStatus = progressMap.get(prereq.concept_id);
-        const domain = sourceConcept?.domain ?? "math";
-        const color = DOMAIN_COLORS[domain];
 
         const isActive =
           sourceStatus === "mastered" && targetStatus !== "locked";
-
-        // Highlight edges leading to freshly unlocked concepts
-        const isFreshBridge = recentlyUnlockedIds.includes(
-          prereq.concept_id
-        );
+        const isFreshBridge = recentlyUnlockedIds.includes(prereq.concept_id);
 
         return {
           id: `${prereq.prerequisite_id}->${prereq.concept_id}`,
           source: prereq.prerequisite_id,
           target: prereq.concept_id,
           type: "default",
-          animated: isActive || isFreshBridge,
+          animated: false,
           style: {
             stroke: isFreshBridge
-              ? color
+              ? "rgba(255,255,255,0.75)"
               : isActive
-              ? color
-              : "rgba(255,255,255,0.08)",
-            strokeWidth: isFreshBridge ? 3 : isActive ? 2 : 1,
-            opacity: isFreshBridge ? 1 : isActive ? 0.8 : 0.3,
-            filter: isFreshBridge
-              ? `drop-shadow(0 0 6px ${color})`
-              : undefined,
+              ? "rgba(255,255,255,0.40)"
+              : "rgba(255,255,255,0.07)",
+            strokeWidth: isFreshBridge ? 1.5 : isActive ? 1 : 0.75,
+            strokeDasharray: isActive || isFreshBridge ? undefined : "3 4",
           },
         };
       }),
-    [prerequisites, concepts, progressMap, recentlyUnlockedIds]
+    [prerequisites, progressMap, recentlyUnlockedIds]
   );
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
@@ -144,25 +130,17 @@ export default function KnowledgeGraph() {
         proOptions={{ hideAttribution: true }}
         className="bg-transparent"
       >
+        {/* Ruled lines — horizontal notebook lines drawn across the constellation */}
         <Background
-          variant={BackgroundVariant.Dots}
-          gap={24}
+          variant={BackgroundVariant.Lines}
+          gap={32}
           size={1}
-          color="rgba(255,255,255,0.04)"
+          color="rgba(255,255,255,0.035)"
+          style={{ strokeDasharray: undefined }}
         />
         <Controls
-          className="!bg-black !border-white/10 !rounded-xl !shadow-xl [&>button]:!bg-black [&>button]:!border-white/10 [&>button]:!text-white/50 [&>button:hover]:!bg-white/8"
+          className="!bg-black !border !border-white/[0.07] !rounded-none !shadow-none [&>button]:!bg-black [&>button]:!border-white/[0.07] [&>button]:!text-white/30 [&>button:hover]:!bg-white/5 [&>button]:!rounded-none"
           showInteractive={false}
-        />
-        <MiniMap
-          className="!bg-black !border-white/10 !rounded-xl"
-          nodeColor={(node) => {
-            const data = node.data as ConceptNodeData;
-            if (data.status === "locked") return "rgba(255,255,255,0.1)";
-            if (data.status === "unlocked") return "rgba(255,255,255,0.5)";
-            return "#ffffff";
-          }}
-          maskColor="rgba(0, 0, 0, 0.75)"
         />
       </ReactFlow>
     </div>

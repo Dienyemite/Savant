@@ -22,9 +22,12 @@ export default function VisualFeedbackRenderer({ block }: Props) {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="space-y-3"
     >
-      <span className="text-xs font-semibold text-white/30 uppercase tracking-wider">
-        {block.label}
-      </span>
+    <span
+      className="text-[10px] text-white/25 uppercase tracking-widest"
+      style={{ fontFamily: "'Courier New', monospace" }}
+    >
+      {block.label}
+    </span>
 
       {block.visualization_type === "number_line" && (
         <NumberLineViz value={rawValue} />
@@ -52,7 +55,7 @@ function NumberLineViz({ value }: { value: number }) {
   const pct = Math.min(Math.max((value / max) * 100, 0), 100);
 
   return (
-    <div className="relative h-12 rounded-xl bg-white/4 border border-white/8 overflow-hidden">
+    <div className="relative h-10 border border-white/[0.07] overflow-hidden">
       {/* Tick marks */}
       <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between">
         {Array.from({ length: max + 1 }).map((_, i) =>
@@ -70,7 +73,7 @@ function NumberLineViz({ value }: { value: number }) {
       <motion.div
         animate={{ left: `calc(${pct}% - 6px + 16px)` }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-lg shadow-white/15"
+        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white"
       />
     </div>
   );
@@ -90,13 +93,13 @@ function ScaleViz({ value }: { value: number }) {
         className="relative w-48 h-px bg-white/30 rounded-full origin-center"
       >
         {/* Left pan */}
-        <div className="absolute -left-2 -top-3 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+        <div className="absolute -left-2 -top-3 w-6 h-6 border border-white/20 flex items-center justify-center">
           <span className="text-[8px] font-mono text-white/60">
             {value}
           </span>
         </div>
         {/* Right pan */}
-        <div className="absolute -right-2 -top-3 w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+        <div className="absolute -right-2 -top-3 w-6 h-6 border border-white/20 flex items-center justify-center">
           <span className="text-[8px] font-mono text-white/60">
             {mid}
           </span>
@@ -118,7 +121,7 @@ function BarChartViz({ value }: { value: number }) {
       <motion.div
         animate={{ height: `${pct}%` }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="w-full rounded-t-lg bg-white/40 min-h-[4px]"
+        className="w-full bg-white/35 min-h-[4px]"
       />
     </div>
   );
@@ -132,7 +135,7 @@ function PieChartViz({ value }: { value: number }) {
   return (
     <div className="flex items-center justify-center py-4">
       <div
-        className="w-20 h-20 rounded-full"
+        className="w-20 h-20"
         style={{
           background: `conic-gradient(rgba(255,255,255,0.7) ${degrees}deg, rgba(255,255,255,0.08) ${degrees}deg)`,
         }}

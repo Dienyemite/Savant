@@ -95,6 +95,60 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════
+   NOTEBOOK PAPER — The core visual language of Savant.
+   Every surface is a page from a monochrome notebook.
+   ═══════════════════════════════════════════════════ */
+
+/* Horizontal ruled lines — the primary notebook texture */
+.notebook-ruled {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 31px,
+      rgba(255, 255, 255, 0.045) 31px,
+      rgba(255, 255, 255, 0.045) 32px
+    );
+  background-size: 100% 32px;
+}
+
+/* Grid paper variant */
+.notebook-grid {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 32px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 31px,
+      rgba(255, 255, 255, 0.04) 31px,
+      rgba(255, 255, 255, 0.04) 32px
+    );
+  background-size: 32px 32px;
+}
+
+/* Left margin line — like a real notebook's red margin (rendered white) */
+.notebook-margin {
+  position: relative;
+}
+.notebook-margin::before {
+  content: '';
+  position: absolute;
+  left: 56px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Glow text utilities */
 .text-glow {
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.55),
@@ -109,16 +163,36 @@
 
 /* Glow box utilities */
 .glow-border {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12),
-              0 0 12px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10),
+              0 0 10px rgba(255, 255, 255, 0.04);
 }
 
 .glow-box {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1),
-              0 0 50px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.07),
+              0 0 50px rgba(255, 255, 255, 0.03);
 }
 
-/* React Flow overrides */
+/* Notebook panel — inset panel that looks cut from a page */
+.notebook-panel {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(2px);
+}
+
+/* Handwritten-style dashed border for locked concepts */
+.dashed-border {
+  border: 1.5px dashed rgba(255, 255, 255, 0.25);
+}
+
+/* Canvas cursor: crosshair for pen tool */
+.canvas-pen {
+  cursor: crosshair;
+}
+.canvas-eraser {
+  cursor: cell;
+}
+
+/* React Flow overrides — clean notebook look */
 .react-flow__renderer {
   background: transparent !important;
 }
@@ -127,9 +201,15 @@
   stroke-linecap: round;
 }
 
-/* Scrollbar */
+/* Remove React Flow's default panel borders */
+.react-flow__controls {
+  box-shadow: none !important;
+}
+
+/* Scrollbar — thin, monochrome */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
+  height: 3px;
 }
 
 ::-webkit-scrollbar-track {
@@ -137,10 +217,40 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Monospace font for UI elements and data */
+.font-mono-ui {
+  font-family: 'Geist Mono', 'Courier New', monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Page number style */
+.page-number {
+  font-family: 'Geist Mono', 'Courier New', monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.1em;
+}
+
+/* Annotation circle — for concept nodes on the constellation */
+.annotation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+}
+
+/* Ink underline used for interactive/highlighted text */
+.ink-underline {
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
 }
