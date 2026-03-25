@@ -89,6 +89,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'ivy-presto', serif;
+    /* Markdown spec: all white elements carry a subtle luminescence — like gel ink on black paper */
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.22), 0 0 14px rgba(255, 255, 255, 0.08);
   }
   html {
     font-family: 'ivy-presto', serif;
@@ -96,22 +98,46 @@
 }
 
 /* ═══════════════════════════════════════════════════
+   PAPER GRAIN — SVG feTurbulence noise overlay.
+   Mandated by specification: "subtle SVG noise filter
+   applied globally to create a slight grainy effect,
+   mimicking the texture of matte, high-quality black paper."
+   ═══════════════════════════════════════════════════ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* SVG fractalNoise — 256×256 tileable grain, desaturated to monochrome */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  opacity: 0.042;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+/* ═══════════════════════════════════════════════════
    NOTEBOOK PAPER — The core visual language of Savant.
    Every surface is a page from a monochrome notebook.
    ═══════════════════════════════════════════════════ */
 
-/* Horizontal ruled lines — the primary notebook texture (matches physical notebook paper) */
+/* Horizontal ruled lines — matches Image 2 reference:
+   barely-there lines on matte black — 1px at ~8% white, 28px pitch.
+   They create depth without competing with content. */
 .notebook-ruled {
   background-color: #000;
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0px,
-      transparent 30px,
-      rgba(255, 255, 255, 0.10) 30px,
-      rgba(255, 255, 255, 0.10) 31px
+      transparent 27px,
+      rgba(255, 255, 255, 0.08) 27px,
+      rgba(255, 255, 255, 0.08) 28px
     );
-  background-size: 100% 31px;
+  background-size: 100% 28px;
 }
 
 /* Grid paper variant */
@@ -119,8 +145,8 @@
   background-image:
     repeating-linear-gradient(
       to right,
-      rgba(255, 255, 255, 0.03) 0px,
-      rgba(255, 255, 255, 0.03) 1px,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0.03) 1px,
       transparent 1px,
       transparent 32px
     ),
@@ -134,7 +160,9 @@
   background-size: 32px 32px;
 }
 
-/* Left margin line — monochrome version of the red margin line in the attached reference */
+/* Left margin line — a single 1px rule, slightly luminescent.
+   Like the faint blue/gray margin on quality ruled paper,
+   visible but never competing with written content. */
 .notebook-margin {
   position: relative;
 }
@@ -145,7 +173,8 @@
   top: 0;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.06);
   pointer-events: none;
   z-index: 1;
 }
@@ -171,34 +200,47 @@
   z-index: 10;
 }
 
-/* Glow text utilities */
+/* Glow text utilities — Image 1 reference: white gel ink on black paper
+   has a soft halo, like bioluminescence or chalk on slate. */
 .text-glow {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.55),
-               0 0 25px rgba(255, 255, 255, 0.25),
-               0 0 50px rgba(255, 255, 255, 0.08);
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.9),
+    0 0 12px rgba(255, 255, 255, 0.45),
+    0 0 28px rgba(255, 255, 255, 0.18);
 }
 
 .text-glow-subtle {
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.35),
-               0 0 18px rgba(255, 255, 255, 0.12);
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.35),
+    0 0 16px rgba(255, 255, 255, 0.12);
+}
+
+/* Element-level glow — for lines, dots, borders */
+.glow-white {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.55))
+          drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
 }
 
 /* Glow box utilities */
 .glow-border {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10),
-              0 0 10px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12),
+              0 0 8px rgba(255, 255, 255, 0.06);
 }
 
 .glow-box {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.07),
-              0 0 50px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.08),
+              0 0 40px rgba(255, 255, 255, 0.03);
 }
 
-/* Notebook panel — inset panel that looks cut from a page */
+/* Notebook panel — inset panel styled like a column of academic text
+   (reference: Image 3, Pride and Prejudice chapter page —
+   white serif on black, dense and typeset). */
 .notebook-panel {
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04),
+              inset 0 0 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Handwritten-style dashed border for locked concepts */
