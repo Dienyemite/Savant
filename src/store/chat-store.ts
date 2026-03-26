@@ -4,12 +4,32 @@ import { create } from "zustand";
 // Chat Store — Manages Socratic Tutor state
 // Tracks messages, open/closed state, and
 // auto-trigger logic (appears after 2 failures).
+//
+// Phase 5 addition: marginalia entries — AI
+// responses that appear as positioned annotations
+// next to selected lesson content.
 // ============================================
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+}
+
+/**
+ * A marginalia entry: an AI response rendered as a
+ * positioned note in the right margin of the lesson page,
+ * anchored to the Y-coordinate of the selected text.
+ */
+export interface MarginaliaEntry {
+  id: string;
+  /** Y position (page-relative px) of the text selection anchor */
+  anchorY: number;
+  /** The highlighted text that was selected when invoking the tutor */
+  selectedText: string;
+  /** Streamed AI response content */
+  content: string;
+  isStreaming: boolean;
 }
 
 interface ChatState {
@@ -22,6 +42,9 @@ interface ChatState {
   messages: ChatMessage[];
   isStreaming: boolean;
 
+  // Phase 5: Marginalia entries
+  marginaliaEntries: MarginaliaEntry[];
+
   // Actions
   openChat: () => void;
   closeChat: () => void;
@@ -32,6 +55,12 @@ interface ChatState {
   setStreaming: (v: boolean) => void;
   triggerFromFailure: () => void;
   resetChat: () => void;
+
+  // Phase 5: Marginalia actions
+  addMarginaliaEntry: (anchorY: number, selectedText: string) => string;
+  updateMarginalia: (id: string, content: string) => void;
+  finishMarginalia: (id: string) => void;
+  removeMarginalia: (id: string) => void;
 }
 
 let messageCounter = 0;
@@ -45,6 +74,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   hasBeenTriggered: false,
   messages: [],
   isStreaming: false,
+  marginaliaEntries: [],
 
   openChat: () => set({ isOpen: true, isMinimized: false }),
   closeChat: () => set({ isOpen: false }),
@@ -74,7 +104,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   triggerFromFailure: () => {
     const { isOpen, hasBeenTriggered, messages } = get();
     if (!isOpen && messages.length === 0) {
-      // First time trigger — add a greeting
       set({
         isOpen: true,
         hasBeenTriggered: true,
@@ -100,6 +129,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messages: [],
       isStreaming: false,
     }),
+
+  // ── Phase 5: Marginalia ──
+
+  addMarginaliaEntry: (anchorY, selectedText) => {
+    const id = nextId();
+    set((s) => ({
+      marginaliaEntries: [
+        ...s.marginaliaEntries,
+        { id, anchorY, selectedText, content: "", isStreaming: true },
+      ],
+    }));
+    return id;
+  },
+
+  updateMarginalia: (id, content) =>
+    set((s) => ({
+      marginaliaEntries: s.marginaliaEntries.map((e) =>
+        e.id === id ? { ...e, content } : e
+      ),
+    })),
+
+  finishMarginalia: (id) =>
+    set((s) => ({
+      marginaliaEntries: s.marginaliaEntries.map((e) =>
+        e.id === id ? { ...e, isStreaming: false } : e
+      ),
+    })),
+
+  removeMarginalia: (id) =>
+    set((s) => ({
+      marginaliaEntries: s.marginaliaEntries.filter((e) => e.id !== id),
+    })),
 }));
 
 export { nextId };

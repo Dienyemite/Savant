@@ -9,6 +9,8 @@ import { DOMAIN_LABELS } from "@/types";
 import LessonBlockRenderer from "./LessonBlockRenderer";
 import NotebookCanvas, { type NotebookCanvasHandle } from "./NotebookCanvas";
 import SocraticChat from "./SocraticChat";
+import MarginaliaAnnotations from "./MarginaliaAnnotations";
+import SelectionTrigger from "./SelectionTrigger";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 
 // ════════════════════════════════════════════════════════════
@@ -52,6 +54,8 @@ export default function LessonView() {
 
   const { updateProgress, concepts, recentlyUnlockedIds } = useGraphStore();
   const canvasRef = useRef<NotebookCanvasHandle>(null);
+  /** Ref for the scrollable content column — used by SelectionTrigger */
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const currentBlock = getCurrentBlock();
   const isLastSlide = currentSlideIndex === totalSlides - 1;
@@ -152,7 +156,10 @@ export default function LessonView() {
       </header>
 
       {/* ── Lesson page body ── */}
-      <div className="absolute inset-0 pt-12 pb-14 flex flex-col items-center justify-start overflow-y-auto">
+      <div
+        ref={contentRef}
+        className="absolute inset-0 pt-12 pb-14 flex flex-col items-center justify-start overflow-y-auto"
+      >
         <AnimatePresence mode="wait" custom={1}>
           {!isLessonComplete ? (
             <motion.div
@@ -171,6 +178,13 @@ export default function LessonView() {
                   <LessonBlockRenderer block={currentBlock} />
                 )}
               </div>
+
+              {/*
+                Phase 5: Marginalia annotations appear in the right
+                gutter — one per text selection that triggered the tutor.
+                Positioned relative to the content column.
+              */}
+              <MarginaliaAnnotations />
 
               {/* ── Canvas annotation overlay ── */}
               <NotebookCanvas
@@ -344,8 +358,16 @@ export default function LessonView() {
         </footer>
       )}
 
-      {/* Socratic AI Tutor */}
+      {/* Socratic AI Tutor — side panel (auto-triggered after 2 failures) */}
       <SocraticChat />
+
+      {/*
+        Phase 5: Selection trigger — shows "≣ Ask Savant" button
+        when the student highlights text in the lesson content.
+        Invokes the tutor and renders its response as a marginalia
+        annotation positioned next to the selected text.
+      */}
+      <SelectionTrigger containerRef={contentRef} />
     </motion.div>
   );
 }

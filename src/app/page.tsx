@@ -6,6 +6,9 @@ import GraphLegend from "@/components/graph/GraphLegend";
 import ConceptInfoPanel from "@/components/graph/ConceptInfoPanel";
 import LessonModal from "@/components/graph/LessonModal";
 import LessonView from "@/components/lesson/LessonView";
+import InfiniteCanvas from "@/components/canvas/InfiniteCanvas";
+import NotebookCover from "@/components/cover/NotebookCover";
+import { useCanvasStore } from "@/store/canvas-store";
 
 // React Flow must be loaded client-side only (uses window/DOM APIs)
 const KnowledgeGraph = dynamic(
@@ -14,65 +17,82 @@ const KnowledgeGraph = dynamic(
 );
 
 export default function Home() {
+  const isCoverOpen = useCanvasStore((s) => s.isCoverOpen);
+
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black notebook-ruled notebook-margin">
 
-      {/* Left margin gutter — navigation lives in the 72px strip to the left of the margin line */}
-      <nav className="notebook-nav-margin">
-        {/* Page number / section index at top of margin */}
-        <span
-          className="text-[9px] tracking-[0.3em] text-white/20 leading-none"
-          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-        >
-          I
-        </span>
+      {/*
+        Phase 1 — Infinite Canvas
+        Wraps the constellation view and provides:
+          • Freehand ink layer (perfect-freehand SVG overlay)
+          • Free-form text note layer (click anywhere to annotate)
+          • Floating drawing toolbar (V / P / E / T shortcuts)
+      */}
+      <InfiniteCanvas>
+        {/* Left margin gutter — navigation in the 72px strip */}
+        <nav className="notebook-nav-margin">
+          <span
+            className="text-[9px] tracking-[0.3em] text-white/18 leading-none"
+            style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          >
+            I
+          </span>
+          <Link
+            href="/dashboard"
+            className="text-[9px] tracking-[0.25em] uppercase text-white/22 hover:text-white/55 transition-colors leading-none"
+            style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          >
+            Analytics
+          </Link>
+          <Link
+            href="/onboarding"
+            className="text-[9px] tracking-[0.25em] uppercase text-white/22 hover:text-white/55 transition-colors leading-none"
+            style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          >
+            Start Path
+          </Link>
+          <div
+            className="mt-auto mb-6 text-[9px] tracking-wider text-white/14 leading-none"
+            style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          >
+            <span
+              className="inline-block w-1.5 h-1.5 border border-white/25 rounded-full mb-1"
+              style={{ writingMode: "horizontal-tb" }}
+            />
+            Demo Student
+          </div>
+        </nav>
 
-        {/* Nav items — rotated 90° so they read bottom-to-top along the margin */}
-        <Link
-          href="/dashboard"
-          className="text-[9px] tracking-[0.25em] uppercase text-white/25 hover:text-white/60 transition-colors leading-none"
-          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-        >
-          Analytics
-        </Link>
-        <Link
-          href="/onboarding"
-          className="text-[9px] tracking-[0.25em] uppercase text-white/25 hover:text-white/60 transition-colors leading-none"
-          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-        >
-          Start Path
-        </Link>
-
-        {/* User indicator — small dot + label */}
+        {/* Page label */}
         <div
-          className="flex flex-col items-center gap-1 text-[9px] tracking-wider text-white/15 leading-none mt-auto mb-6"
-          style={{ fontFamily: "'Courier New', monospace", writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+          className="absolute z-10 top-[18px] left-[88px] leading-none"
+          style={{ fontFamily: "'Courier New', monospace" }}
         >
-          <span className="inline-block w-1.5 h-1.5 border border-white/30 rounded-full mb-1" style={{ writingMode: "horizontal-tb" }} />
-          Demo Student
+          <span className="text-[11px] tracking-[0.3em] uppercase text-white/35">
+            Knowledge Constellation
+          </span>
         </div>
-      </nav>
 
-      {/* Page title — sits in the content area near the top, aligned to the ruled lines */}
-      <div
-        className="absolute z-10 top-[18px] left-[88px] leading-none"
-        style={{ fontFamily: "'Courier New', monospace" }}
-      >
-        <span className="text-[11px] tracking-[0.3em] uppercase text-white/40">
-          Knowledge Constellation
-        </span>
-      </div>
+        {/* Knowledge graph — fills content area right of the margin */}
+        <div className="relative z-10 w-full h-full notebook-content">
+          <KnowledgeGraph />
+        </div>
+      </InfiniteCanvas>
 
-      {/* Knowledge Constellation — fills the notebook page to the right of the margin */}
-      <div className="relative z-10 w-full h-full notebook-content">
-        <KnowledgeGraph />
-      </div>
-
-      {/* Overlays — panels styled as torn notebook pages / margin annotations */}
+      {/* Overlay panels (above ink layer) */}
       <GraphLegend />
       <ConceptInfoPanel />
       <LessonModal />
       <LessonView />
+
+      {/*
+        Phase 2 — The Front Cover
+        Renders over everything when the site first loads.
+        Dismissed with a page-turn animation once the user
+        selects a learning path and subject.
+      */}
+      {isCoverOpen && <NotebookCover />}
     </main>
   );
 }
