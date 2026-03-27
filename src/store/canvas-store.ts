@@ -49,6 +49,23 @@ interface CanvasStore {
   isCoverOpen: boolean;
   closeCover: () => void;
 
+  /**
+   * The current ReactFlow viewport. Kept in sync via KnowledgeGraph's
+   * onMove / onInit callbacks. Used by InkLayer and TextNoteLayer to
+   * convert screen coords ↔ canvas coords so strokes/notes stay pinned
+   * to the canvas paper rather than the screen.
+   */
+  viewport: { x: number; y: number; zoom: number };
+  setViewport: (x: number, y: number, zoom: number) => void;
+
+  /**
+   * Screen-space top-left of the ReactFlow container (i.e. the
+   * notebook-content area, which is offset 72px from the left edge).
+   * Set once on mount and on window resize via KnowledgeGraph.
+   */
+  rfContainerOrigin: { x: number; y: number };
+  setRfContainerOrigin: (x: number, y: number) => void;
+
   // ── Ink strokes (Phase 3: stylus + mouse drawing) ──
   strokes: InkStroke[];
   /** Points being accumulated for the current in-progress stroke */
@@ -57,7 +74,8 @@ interface CanvasStore {
   extendStroke: (x: number, y: number, pressure: number) => void;
   /** Finalise the current stroke and append it to strokes[] */
   commitStroke: () => void;
-  eraseNear: (x: number, y: number) => void;
+  /** Erase strokes whose points are within `radius` canvas-units of (x, y) */
+  eraseNear: (x: number, y: number, radius?: number) => void;
   clearStrokes: () => void;
 
   // ── Text notes (Phase 3: free-form typing) ──
@@ -85,6 +103,13 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   isCoverOpen: true,
   closeCover: () => set({ isCoverOpen: false }),
 
+  // ── Viewport (synced from ReactFlow) ──
+  viewport: { x: 0, y: 0, zoom: 1 },
+  setViewport: (x, y, zoom) => set({ viewport: { x, y, zoom } }),
+
+  rfContainerOrigin: { x: 0, y: 0 },
+  setRfContainerOrigin: (x, y) => set({ rfContainerOrigin: { x, y } }),
+
   // ── Ink ──
   strokes: [],
   activePoints: [],
@@ -110,11 +135,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }));
   },
 
-  eraseNear: (x, y) =>
+  eraseNear: (x, y, radius = 20) =>
     set((s) => ({
       strokes: s.strokes.filter(
         (stroke) =>
-          !stroke.points.some(([px, py]) => Math.hypot(px - x, py - y) < 20)
+          !stroke.points.some(([px, py]) => Math.hypot(px - x, py - y) < radius)
       ),
     })),
 

@@ -59,12 +59,26 @@ export default function InkLayer() {
     extendStroke,
     commitStroke,
     eraseNear,
+    viewport,
+    rfContainerOrigin,
   } = useCanvasStore();
 
   const isDrawing = useRef(false);
   const isPen = activeTool === "pen";
   const isEraser = activeTool === "eraser";
   const isActive = isPen || isEraser;
+
+  const { x: vx, y: vy, zoom: vz } = viewport;
+  const { x: ox, y: oy } = rfContainerOrigin;
+
+  /** Convert a screen-space pointer position to canvas space. */
+  const toCanvas = useCallback(
+    (clientX: number, clientY: number) => ({
+      cx: (clientX - ox - vx) / vz,
+      cy: (clientY - oy - vy) / vz,
+    }),
+    [ox, oy, vx, vy, vz]
+  );
 
   // ── Pointer handlers ──
 
@@ -74,26 +88,28 @@ export default function InkLayer() {
       e.currentTarget.setPointerCapture(e.pointerId);
       isDrawing.current = true;
       const p = e.pressure > 0 ? e.pressure : 0.5;
+      const { cx, cy } = toCanvas(e.clientX, e.clientY);
       if (isPen) {
-        beginStroke(e.clientX, e.clientY, p);
+        beginStroke(cx, cy, p);
       } else {
-        eraseNear(e.clientX, e.clientY);
+        eraseNear(cx, cy, 20 / vz);
       }
     },
-    [isActive, isPen, beginStroke, eraseNear]
+    [isActive, isPen, beginStroke, eraseNear, toCanvas, vz]
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
       if (!isDrawing.current || !isActive) return;
       const p = e.pressure > 0 ? e.pressure : 0.5;
+      const { cx, cy } = toCanvas(e.clientX, e.clientY);
       if (isPen) {
-        extendStroke(e.clientX, e.clientY, p);
+        extendStroke(cx, cy, p);
       } else {
-        eraseNear(e.clientX, e.clientY);
+        eraseNear(cx, cy, 20 / vz);
       }
     },
-    [isActive, isPen, extendStroke, eraseNear]
+    [isActive, isPen, extendStroke, eraseNear, toCanvas, vz]
   );
 
   const onPointerUp = useCallback(() => {
@@ -117,40 +133,47 @@ export default function InkLayer() {
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerUp}
     >
-      {/* Committed strokes */}
-      {strokes.map((stroke) => {
-        const outline = getStroke(stroke.points, STROKE_OPTIONS);
-        const d = outlineToPath(outline);
-        if (!d) return null;
-        return (
-          <path
-            key={stroke.id}
-            d={d}
-            fill="rgba(255,255,255,0.82)"
-            style={{
-              filter:
-                "drop-shadow(0 0 2px rgba(255,255,255,0.45)) drop-shadow(0 0 6px rgba(255,255,255,0.15))",
-            }}
-          />
-        );
-      })}
+      {/*
+        All paths are stored in canvas space.
+        This <g> applies the same transform ReactFlow uses so they
+        stay pinned to the paper when the user pans or zooms.
+      */}
+      <g transform={`translate(${ox + vx}, ${oy + vy}) scale(${vz})`}>
+        {/* Committed strokes */}
+        {strokes.map((stroke) => {
+          const outline = getStroke(stroke.points, STROKE_OPTIONS);
+          const d = outlineToPath(outline);
+          if (!d) return null;
+          return (
+            <path
+              key={stroke.id}
+              d={d}
+              fill="rgba(255,255,255,0.82)"
+              style={{
+                filter:
+                  "drop-shadow(0 0 2px rgba(255,255,255,0.45)) drop-shadow(0 0 6px rgba(255,255,255,0.15))",
+              }}
+            />
+          );
+        })}
 
-      {/* Active stroke (currently being drawn) */}
-      {activePoints.length > 1 && (() => {
-        const outline = getStroke(activePoints, STROKE_OPTIONS);
-        const d = outlineToPath(outline);
-        if (!d) return null;
-        return (
-          <path
-            d={d}
-            fill="rgba(255,255,255,0.9)"
-            style={{
-              filter:
-                "drop-shadow(0 0 3px rgba(255,255,255,0.6)) drop-shadow(0 0 8px rgba(255,255,255,0.2))",
-            }}
-          />
-        );
-      })()}
+        {/* Active stroke (currently being drawn) */}
+        {activePoints.length > 1 && (() => {
+          const outline = getStroke(activePoints, STROKE_OPTIONS);
+          const d = outlineToPath(outline);
+          if (!d) return null;
+          return (
+            <path
+              d={d}
+              fill="rgba(255,255,255,0.9)"
+              style={{
+                filter:
+                  "drop-shadow(0 0 3px rgba(255,255,255,0.6)) drop-shadow(0 0 8px rgba(255,255,255,0.2))",
+              }}
+            />
+          );
+        })()}
+      </g>
     </svg>
   );
 }

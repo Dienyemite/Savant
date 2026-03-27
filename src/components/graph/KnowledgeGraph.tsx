@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -12,11 +12,13 @@ import {
   type NodeMouseHandler,
   BackgroundVariant,
   ConnectionLineType,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import ConceptGraphNode, { type ConceptNodeData } from "./ConceptNode";
 import { useGraphStore } from "@/store/graph-store";
+import { useCanvasStore } from "@/store/canvas-store";
 
 // Register custom node types
 const nodeTypes = {
@@ -35,6 +37,10 @@ export default function KnowledgeGraph() {
     clearMasteryAnimation,
   } = useGraphStore();
 
+  const setViewport = useCanvasStore((s) => s.setViewport);
+  const setRfContainerOrigin = useCanvasStore((s) => s.setRfContainerOrigin);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Clear mastery animations after they play
   useEffect(() => {
     if (recentlyMasteredId || recentlyUnlockedIds.length > 0) {
@@ -44,6 +50,20 @@ export default function KnowledgeGraph() {
       return () => clearTimeout(timer);
     }
   }, [recentlyMasteredId, recentlyUnlockedIds, clearMasteryAnimation]);
+
+  // Report the ReactFlow container's screen-space origin to the canvas store
+  // so InkLayer and TextNoteLayer can convert screen ↔ canvas coordinates.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      setRfContainerOrigin(rect.left, rect.top);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [setRfContainerOrigin]);
 
   // Build React Flow nodes from concepts
   const initialNodes: Node<ConceptNodeData>[] = useMemo(
@@ -113,8 +133,16 @@ export default function KnowledgeGraph() {
     [progressMap, openLessonModal, selectConcept]
   );
 
+  const handleInit = useCallback(
+    (rf: ReactFlowInstance) => {
+      const vp = rf.getViewport();
+      setViewport(vp.x, vp.y, vp.zoom);
+    },
+    [setViewport]
+  );
+
   return (
-    <div className="w-full h-full">
+    <div ref={containerRef} className="w-full h-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -129,6 +157,8 @@ export default function KnowledgeGraph() {
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
         className="bg-transparent"
+        onInit={handleInit}
+        onMove={(_, vp) => setViewport(vp.x, vp.y, vp.zoom)}
       >
         {/* Ruled lines — horizontal notebook lines drawn across the constellation */}
         <Background

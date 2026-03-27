@@ -25,9 +25,13 @@ export default function TextNoteLayer() {
     finishNote,
     editNote,
     deleteNote,
+    viewport,
+    rfContainerOrigin,
   } = useCanvasStore();
 
   const isTextMode = activeTool === "text";
+  const { x: vx, y: vy, zoom: vz } = viewport;
+  const { x: ox, y: oy } = rfContainerOrigin;
 
   // ── Canvas click → spawn note ──
   const handleCanvasClick = useCallback(
@@ -35,9 +39,12 @@ export default function TextNoteLayer() {
       if (!isTextMode) return;
       // Only spawn on empty canvas, not on existing notes
       if ((e.target as HTMLElement).closest("[data-text-note]")) return;
-      addNote(e.clientX, e.clientY);
+      // Convert screen coords → canvas space so the note stays pinned to the paper
+      const canvasX = (e.clientX - ox - vx) / vz;
+      const canvasY = (e.clientY - oy - vy) / vz;
+      addNote(canvasX, canvasY);
     },
-    [isTextMode, addNote]
+    [isTextMode, addNote, ox, oy, vx, vy, vz]
   );
 
   return (
@@ -50,6 +57,21 @@ export default function TextNoteLayer() {
       }}
       onClick={handleCanvasClick}
     >
+      {/*
+        Inner wrapper mirrors the ReactFlow viewport transform so notes
+        that are stored in canvas space appear at the correct screen position
+        and move with the canvas when the user pans or zooms.
+      */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          transformOrigin: "0 0",
+          transform: `translate(${ox + vx}px, ${oy + vy}px) scale(${vz})`,
+          pointerEvents: "none",
+        }}
+      >
       {textNotes.map((note) => (
         <div
           key={note.id}
@@ -58,7 +80,6 @@ export default function TextNoteLayer() {
           style={{
             left: note.x,
             top: note.y,
-            transform: "translate(-2px, -2px)",
             pointerEvents: "all",
           }}
         >
@@ -115,6 +136,7 @@ export default function TextNoteLayer() {
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }
