@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import GraphLegend from "@/components/graph/GraphLegend";
@@ -9,6 +10,7 @@ import LessonView from "@/components/lesson/LessonView";
 import InfiniteCanvas from "@/components/canvas/InfiniteCanvas";
 import NotebookCover from "@/components/cover/NotebookCover";
 import { useCanvasStore } from "@/store/canvas-store";
+import { useGraphStore } from "@/store/graph-store";
 
 // React Flow must be loaded client-side only (uses window/DOM APIs)
 const KnowledgeGraph = dynamic(
@@ -18,6 +20,20 @@ const KnowledgeGraph = dynamic(
 
 export default function Home() {
   const isCoverOpen = useCanvasStore((s) => s.isCoverOpen);
+  const applyUserPreferences = useGraphStore((s) => s.applyUserPreferences);
+
+  // Apply onboarding selections persisted to sessionStorage by /onboarding.
+  // Phase 6 will replace this with Supabase user metadata.
+  useEffect(() => {
+    const raw = sessionStorage.getItem("savant_onboarding");
+    if (!raw) return;
+    try {
+      const prefs = JSON.parse(raw);
+      applyUserPreferences(prefs);
+    } catch {
+      // Malformed sessionStorage value — ignore and use seed defaults.
+    }
+  }, [applyUserPreferences]);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black notebook-ruled notebook-margin">

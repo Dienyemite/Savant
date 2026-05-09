@@ -29,6 +29,14 @@ const STROKE_OPTIONS = {
   simulatePressure: false, // we pass real pressure from pointer events
 };
 
+const HIGHLIGHT_OPTIONS = {
+  size: 18,
+  thinning: 0.0,    // flat width — no pressure taper
+  smoothing: 0.8,
+  streamline: 0.4,
+  simulatePressure: false,
+};
+
 /** Convert perfect-freehand outline points to a smooth SVG path. */
 function outlineToPath(outline: number[][]): string {
   if (outline.length < 4) return "";
@@ -59,6 +67,11 @@ export default function InkLayer() {
     extendStroke,
     commitStroke,
     eraseNear,
+    highlightStrokes,
+    activeHighlightPoints,
+    beginHighlight,
+    extendHighlight,
+    commitHighlight,
     viewport,
     rfContainerOrigin,
   } = useCanvasStore();
@@ -66,7 +79,8 @@ export default function InkLayer() {
   const isDrawing = useRef(false);
   const isPen = activeTool === "pen";
   const isEraser = activeTool === "eraser";
-  const isActive = isPen || isEraser;
+  const isHighlight = activeTool === "highlight";
+  const isActive = isPen || isEraser || isHighlight;
 
   const { x: vx, y: vy, zoom: vz } = viewport;
   const { x: ox, y: oy } = rfContainerOrigin;
@@ -91,11 +105,13 @@ export default function InkLayer() {
       const { cx, cy } = toCanvas(e.clientX, e.clientY);
       if (isPen) {
         beginStroke(cx, cy, p);
+      } else if (isHighlight) {
+        beginHighlight(cx, cy, p);
       } else {
         eraseNear(cx, cy, 20 / vz);
       }
     },
-    [isActive, isPen, beginStroke, eraseNear, toCanvas, vz]
+    [isActive, isPen, isHighlight, beginStroke, beginHighlight, eraseNear, toCanvas, vz]
   );
 
   const onPointerMove = useCallback(
@@ -105,18 +121,21 @@ export default function InkLayer() {
       const { cx, cy } = toCanvas(e.clientX, e.clientY);
       if (isPen) {
         extendStroke(cx, cy, p);
+      } else if (isHighlight) {
+        extendHighlight(cx, cy, p);
       } else {
         eraseNear(cx, cy, 20 / vz);
       }
     },
-    [isActive, isPen, extendStroke, eraseNear, toCanvas, vz]
+    [isActive, isPen, isHighlight, extendStroke, extendHighlight, eraseNear, toCanvas, vz]
   );
 
   const onPointerUp = useCallback(() => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
     if (isPen) commitStroke();
-  }, [isPen, commitStroke]);
+    else if (isHighlight) commitHighlight();
+  }, [isPen, isHighlight, commitStroke, commitHighlight]);
 
   return (
     <svg
@@ -124,7 +143,7 @@ export default function InkLayer() {
       style={{
         zIndex: 30,
         pointerEvents: isActive ? "all" : "none",
-        cursor: isPen ? "crosshair" : isEraser ? "cell" : "default",
+        cursor: isPen ? "crosshair" : isEraser ? "cell" : isHighlight ? "crosshair" : "default",
         overflow: "visible",
         touchAction: "none",
       }}
@@ -139,7 +158,36 @@ export default function InkLayer() {
         stay pinned to the paper when the user pans or zooms.
       */}
       <g transform={`translate(${ox + vx}, ${oy + vy}) scale(${vz})`}>
-        {/* Committed strokes */}
+        {/* ── Highlight strokes — rendered below ink at mix-blend-mode: screen ── */}
+        {highlightStrokes.map((stroke) => {
+          const outline = getStroke(stroke.points, HIGHLIGHT_OPTIONS);
+          const d = outlineToPath(outline);
+          if (!d) return null;
+          return (
+            <path
+              key={stroke.id}
+              d={d}
+              fill={`rgba(255,255,255,${stroke.opacity})`}
+              style={{ mixBlendMode: "screen" }}
+            />
+          );
+        })}
+
+        {/* Active highlight being drawn */}
+        {isHighlight && activeHighlightPoints.length > 1 && (() => {
+          const outline = getStroke(activeHighlightPoints, HIGHLIGHT_OPTIONS);
+          const d = outlineToPath(outline);
+          if (!d) return null;
+          return (
+            <path
+              d={d}
+              fill="rgba(255,255,255,0.22)"
+              style={{ mixBlendMode: "screen" }}
+            />
+          );
+        })()}
+
+        {/* Committed ink strokes */}
         {strokes.map((stroke) => {
           const outline = getStroke(stroke.points, STROKE_OPTIONS);
           const d = outlineToPath(outline);

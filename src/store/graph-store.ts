@@ -39,6 +39,17 @@ interface GraphState {
   closeLessonModal: () => void;
   updateProgress: (conceptId: string, status: ProgressStatus) => void;
   clearMasteryAnimation: () => void;
+  /**
+   * Seeds the progress map based on the user's onboarding selections.
+   * Called from page.tsx after the user completes /onboarding.
+   * Phase 6 will replace this with data loaded from Supabase.
+   */
+  applyUserPreferences: (prefs: {
+    path: "self" | "k12" | "college";
+    gradeLevel: number | null;
+    major: string | null;
+    subject: string | null;
+  }) => void;
 }
 
 // Build initial progress map from seed data
@@ -157,4 +168,47 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
   clearMasteryAnimation: () =>
     set({ recentlyMasteredId: null, recentlyUnlockedIds: [] }),
+
+  applyUserPreferences: (prefs) => {
+    const state = get();
+    const newMap = new Map(state.progressMap);
+
+    // Determine which concept domains to unlock based on path and selections.
+    // Root concepts (no prerequisites) for the matching domains become "unlocked".
+    const rootConceptIds = state.concepts
+      .filter((c) => !state.prerequisites.some((p) => p.concept_id === c.id))
+      .map((c) => c.id);
+
+    if (prefs.path === "self") {
+      // Self-learning: unlock all root concepts
+      for (const id of rootConceptIds) {
+        newMap.set(id, "unlocked");
+      }
+    } else if (prefs.path === "k12") {
+      const grade = prefs.gradeLevel ?? 1;
+      // Grades 1–3: math + language roots only
+      // Grades 4–6: math + language + science roots
+      // Grades 7–12: all roots for the selected subject domains
+      const domainsForGrade =
+        grade <= 3
+          ? ["math", "language"]
+          : grade <= 6
+          ? ["math", "language", "science"]
+          : ["math", "language", "science", "logic"];
+
+      for (const id of rootConceptIds) {
+        const concept = state.concepts.find((c) => c.id === id);
+        if (concept && domainsForGrade.includes(concept.domain)) {
+          newMap.set(id, "unlocked");
+        }
+      }
+    } else if (prefs.path === "college") {
+      // College: unlock all root concepts (full constellation visible)
+      for (const id of rootConceptIds) {
+        newMap.set(id, "unlocked");
+      }
+    }
+
+    set({ progressMap: newMap });
+  },
 }));

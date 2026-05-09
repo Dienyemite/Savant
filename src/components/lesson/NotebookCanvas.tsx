@@ -68,6 +68,10 @@ interface NotebookCanvasProps {
   initialState?: CanvasState;
   onSave?: (state: CanvasState) => void;
   className?: string;
+  /** Ref to the scrollable lesson content container. When provided,
+   *  stroke Y coordinates are stored relative to scrollTop so annotations
+   *  stay pinned to the content position across scrolling. */
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 // ─────────────────────────────────────────────
@@ -124,7 +128,7 @@ function isStrokeNearPoint(stroke: Stroke, ex: number, ey: number): boolean {
 // ─────────────────────────────────────────────
 
 const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
-  function NotebookCanvas({ initialState, onSave, className = "" }, ref) {
+  function NotebookCanvas({ initialState, onSave, className = "", scrollRef }, ref) {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -165,13 +169,16 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
         const svg = svgRef.current;
         if (!svg) return { x: 0, y: 0, pressure: 0.5 };
         const rect = svg.getBoundingClientRect();
+        const scrollY = scrollRef?.current?.scrollTop ?? 0;
         return {
           x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
+          // Store Y relative to content scroll position so strokes
+          // remain anchored to content as the user scrolls.
+          y: e.clientY - rect.top + scrollY,
           pressure: e.pressure > 0 ? e.pressure : 0.5,
         };
       },
-      []
+      [scrollRef]
     );
 
     // ── Pointer Down ──
@@ -283,6 +290,10 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
         ? "cursor-cell"
         : "cursor-text";
 
+    /** Current scroll offset — used to translate stored content-space
+     *  Y coordinates back to screen-space when rendering strokes. */
+    const scrollY = scrollRef?.current?.scrollTop ?? 0;
+
     return (
       <div
         ref={containerRef}
@@ -297,7 +308,9 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
           style={{ touchAction: "none" }}
           onClick={handleClick}
         >
-          {/* Committed strokes */}
+          {/* Committed strokes — translate Y by -scrollY to convert
+               content-space coords back to screen-space for rendering. */}
+          <g transform={`translate(0, ${-scrollY})`}>
           {strokes.map((s) => (
             <path
               key={s.id}
@@ -315,13 +328,14 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
               stroke="none"
             />
           )}
+          </g>
 
-          {/* Text nodes — rendered as foreignObject for real input */}
+          {/* Text nodes — rendered at content-space Y minus scroll offset */}
           {textNodes.map((t) => (
             <foreignObject
               key={t.id}
               x={t.x}
-              y={t.y - 14}
+              y={t.y - 14 - scrollY}
               width={200}
               height={28}
               style={{ overflow: "visible" }}

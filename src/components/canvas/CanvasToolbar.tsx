@@ -14,7 +14,7 @@
 
 import { useEffect } from "react";
 import { useCanvasStore, CanvasTool } from "@/store/canvas-store";
-import { MousePointer2, Pen, Eraser, Type } from "lucide-react";
+import { MousePointer2, Pen, Eraser, Highlighter, Type } from "lucide-react";
 
 const TOOLS: {
   id: CanvasTool;
@@ -22,10 +22,11 @@ const TOOLS: {
   shortcut: string;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: "select", label: "Select", shortcut: "V", Icon: MousePointer2 },
-  { id: "pen",    label: "Pen",    shortcut: "P", Icon: Pen },
-  { id: "eraser", label: "Eraser", shortcut: "E", Icon: Eraser },
-  { id: "text",   label: "Text",   shortcut: "T", Icon: Type },
+  { id: "select",    label: "Select",    shortcut: "V", Icon: MousePointer2 },
+  { id: "pen",       label: "Pen",       shortcut: "P", Icon: Pen },
+  { id: "eraser",    label: "Eraser",    shortcut: "E", Icon: Eraser },
+  { id: "highlight", label: "Highlight", shortcut: "H", Icon: Highlighter },
+  { id: "text",      label: "Text",      shortcut: "T", Icon: Type },
 ];
 
 export default function CanvasToolbar() {

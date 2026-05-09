@@ -16,6 +16,22 @@ import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 
 // ─────────────────────────────────────────────
+// Zoom threshold constants (Phase 1.7)
+// ─────────────────────────────────────────────
+
+/** Minimum zoom level — fully zoomed out, pure constellation view. */
+export const CONSTELLATION_ZOOM_MIN = 0.3;
+
+/**
+ * When zoom exceeds this threshold while a concept node is centred in the
+ * viewport, the app should transition into the spatial lesson view.
+ * Currently lessons open as a fixed overlay; Phase 1.7 will implement the
+ * full spatial crossfade. The constant is defined here so it is a named
+ * value rather than a magic number scattered across components.
+ */
+export const LESSON_ZOOM_THRESHOLD = 1.8;
+
+// ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
 
@@ -23,6 +39,13 @@ import { v4 as uuidv4 } from "uuid";
 export interface InkStroke {
   id: string;
   points: [number, number, number][];
+}
+
+/** A wide semi-transparent highlight stroke (canvas-space). */
+export interface HighlightStroke {
+  id: string;
+  points: [number, number, number][];
+  opacity: number;
 }
 
 /** A free-form text note placed anywhere on the canvas. */
@@ -34,7 +57,7 @@ export interface GlobalTextNote {
   isEditing: boolean;
 }
 
-export type CanvasTool = "select" | "pen" | "eraser" | "text";
+export type CanvasTool = "select" | "pen" | "eraser" | "text" | "highlight";
 
 // ─────────────────────────────────────────────
 // Store interface
@@ -77,6 +100,19 @@ interface CanvasStore {
   /** Erase strokes whose points are within `radius` canvas-units of (x, y) */
   eraseNear: (x: number, y: number, radius?: number) => void;
   clearStrokes: () => void;
+
+  // ── Stroke completion hook (Sprint 3.3.2) ──
+  /** Called after every committed pen stroke — used by Smart Annotation in Phase 5 */
+  onStrokeCommit?: (stroke: InkStroke) => void;
+  setStrokeCommitHandler: (fn: (stroke: InkStroke) => void) => void;
+  clearStrokeCommitHandler: () => void;
+
+  // ── Highlight strokes (Sprint 3.3.1) ──
+  highlightStrokes: HighlightStroke[];
+  activeHighlightPoints: [number, number, number][];
+  beginHighlight: (x: number, y: number, pressure: number) => void;
+  extendHighlight: (x: number, y: number, pressure: number) => void;
+  commitHighlight: () => void;
 
   // ── Text notes (Phase 3: free-form typing) ──
   textNotes: GlobalTextNote[];
@@ -123,7 +159,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     })),
 
   commitStroke: () => {
-    const { activePoints } = get();
+    const { activePoints, onStrokeCommit } = get();
     if (activePoints.length < 2) {
       set({ activePoints: [] });
       return;
@@ -133,6 +169,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       strokes: [...s.strokes, stroke],
       activePoints: [],
     }));
+    onStrokeCommit?.(stroke);
   },
 
   eraseNear: (x, y, radius = 20) =>
@@ -144,6 +181,40 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     })),
 
   clearStrokes: () => set({ strokes: [], activePoints: [] }),
+
+  // ── Stroke completion hook ──
+  onStrokeCommit: undefined,
+  setStrokeCommitHandler: (fn) => set({ onStrokeCommit: fn }),
+  clearStrokeCommitHandler: () => set({ onStrokeCommit: undefined }),
+
+  // ── Highlight strokes ──
+  highlightStrokes: [],
+  activeHighlightPoints: [],
+
+  beginHighlight: (x, y, pressure) =>
+    set({ activeHighlightPoints: [[x, y, pressure]] }),
+
+  extendHighlight: (x, y, pressure) =>
+    set((s) => ({
+      activeHighlightPoints: [...s.activeHighlightPoints, [x, y, pressure]],
+    })),
+
+  commitHighlight: () => {
+    const { activeHighlightPoints } = get();
+    if (activeHighlightPoints.length < 2) {
+      set({ activeHighlightPoints: [] });
+      return;
+    }
+    const stroke: HighlightStroke = {
+      id: uuidv4(),
+      points: [...activeHighlightPoints],
+      opacity: 0.22,
+    };
+    set((s) => ({
+      highlightStrokes: [...s.highlightStrokes, stroke],
+      activeHighlightPoints: [],
+    }));
+  },
 
   // ── Text notes ──
   textNotes: [],

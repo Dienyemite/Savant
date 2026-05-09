@@ -153,12 +153,12 @@ export interface ConceptNode {
 // --- Domain color mapping ---
 
 export const DOMAIN_COLORS: Record<ConceptDomain, string> = {
-  math: "#ffffff",
-  science: "#ffffff",
-  art: "#ffffff",
-  music: "#ffffff",
-  language: "#ffffff",
-  logic: "#ffffff",
+  math:     "rgba(255,255,255,0.9)",    // pure white — the primary domain
+  science:  "rgba(180,220,255,0.8)",    // very faint blue-white
+  art:      "rgba(255,230,200,0.8)",    // very faint warm white
+  music:    "rgba(220,200,255,0.8)",    // very faint lavender-white
+  language: "rgba(200,255,220,0.8)",    // very faint green-white
+  logic:    "rgba(255,255,180,0.8)",    // very faint yellow-white
 };
 
 export const DOMAIN_LABELS: Record<ConceptDomain, string> = {

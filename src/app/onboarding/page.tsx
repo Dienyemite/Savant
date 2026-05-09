@@ -72,8 +72,15 @@ export default function OnboardingPage() {
   );
 
   const handleBegin = () => {
-    // For now, route to the constellation — in full implementation
-    // this would persist the user's chosen path and route appropriately.
+    // Persist selections to sessionStorage so page.tsx can seed the graph.
+    // Phase 6 will replace this with Supabase user metadata persistence.
+    const prefs = {
+      path: selectedPath ?? "self",
+      gradeLevel: selectedPath === "k12" ? grade : null,
+      major: selectedPath === "college" ? major.trim() : null,
+      subject: subject.trim() || null,
+    };
+    sessionStorage.setItem("savant_onboarding", JSON.stringify(prefs));
     router.push("/");
   };
 

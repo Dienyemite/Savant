@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLessonStore } from "@/store/lesson-store";
 import { useGraphStore } from "@/store/graph-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
+import { useCanvasStore } from "@/store/canvas-store";
 import { DOMAIN_LABELS } from "@/types";
 import LessonBlockRenderer from "./LessonBlockRenderer";
 import NotebookCanvas, { type NotebookCanvasHandle } from "./NotebookCanvas";
@@ -53,6 +54,7 @@ export default function LessonView() {
   } = useLessonStore();
 
   const { updateProgress, concepts, recentlyUnlockedIds } = useGraphStore();
+  const { setStrokeCommitHandler, clearStrokeCommitHandler } = useCanvasStore();
   const canvasRef = useRef<NotebookCanvasHandle>(null);
   /** Ref for the scrollable content column — used by SelectionTrigger */
   const contentRef = useRef<HTMLDivElement>(null);
@@ -113,6 +115,16 @@ export default function LessonView() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [isLessonActive, canAdvance, handleNext, handlePrev, handleExit]);
+
+  // Register stroke commit handler for Smart Annotation (Sprint 5.3 will replace the stub)
+  useEffect(() => {
+    if (!isLessonActive) return;
+    setStrokeCommitHandler((stroke) => {
+      // Stub: Sprint 5.3 will forward this stroke to the annotation engine
+      console.log("[SmartAnnotation] stroke committed", stroke.id, stroke.points.length, "pts");
+    });
+    return () => clearStrokeCommitHandler();
+  }, [isLessonActive, setStrokeCommitHandler, clearStrokeCommitHandler]);
 
   if (!isLessonActive || !activeLesson) return null;
 
@@ -189,6 +201,7 @@ export default function LessonView() {
               {/* ── Canvas annotation overlay ── */}
               <NotebookCanvas
                 ref={canvasRef}
+                scrollRef={contentRef}
                 className="z-20"
               />
             </motion.div>
