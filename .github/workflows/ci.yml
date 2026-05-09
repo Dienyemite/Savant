@@ -31,6 +31,6 @@ jobs:
           # Stub values so env validation passes during CI build.
           # No real secrets are used here; the build only checks types and syntax.
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder_anon_key
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder_publishable_key
           ANTHROPIC_API_KEY: placeholder
           GOOGLE_GENERATIVE_AI_API_KEY: placeholder

@@ -174,7 +174,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     });
 
     // Fire-and-forget: persist to DB when user is authenticated
-    supabaseBrowser.auth.getSession().then(({ data }) => {
+    supabaseBrowser.auth.getSession().then(({ data }: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
       if (!data.session) return;
       fetch("/api/progress", {
         method: "PATCH",

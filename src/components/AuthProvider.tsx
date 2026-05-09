@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Load the current session on mount
-    supabaseBrowser.auth.getSession().then(({ data }) => {
+    supabaseBrowser.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setIsLoading(false);
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // React to auth state changes (sign-in, sign-out, token refresh)
     const {
       data: { subscription },
-    } = supabaseBrowser.auth.onAuthStateChange((_event, newSession) => {
+    } = supabaseBrowser.auth.onAuthStateChange((_event: string, newSession: Session | null) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       setIsLoading(false);

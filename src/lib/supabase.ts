@@ -14,24 +14,40 @@ import {
 } from "@supabase/ssr";
 import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-if (!supabaseUrl) {
-  throw new Error(
-    "Missing environment variable: NEXT_PUBLIC_SUPABASE_URL\n" +
-    "Copy .env.example to .env.local and fill in your Supabase project URL."
-  );
+function getEnvVars(): { url: string; key: string } {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url) {
+    throw new Error(
+      "Missing environment variable: NEXT_PUBLIC_SUPABASE_URL\n" +
+      "Copy .env.example to .env.local and fill in your Supabase project URL."
+    );
+  }
+  if (!key) {
+    throw new Error(
+      "Missing environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY\n" +
+      "Copy .env.example to .env.local and fill in your Supabase publishable key."
+    );
+  }
+  return { url, key };
 }
-if (!supabaseAnonKey) {
-  throw new Error(
-    "Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY\n" +
-    "Copy .env.example to .env.local and fill in your Supabase anon key."
-  );
-}
 
-/** Browser client — use in client components and edge API routes */
-export const supabaseBrowser = createBrowserClient(supabaseUrl, supabaseAnonKey);
+let _browser: ReturnType<typeof createBrowserClient> | undefined;
+
+/**
+ * Browser client — use in client components and edge API routes.
+ * Lazy-initialized via Proxy so the module can be imported at build time
+ * without requiring env vars to be present.
+ */
+export const supabaseBrowser = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_target, prop) {
+    if (!_browser) {
+      const { url, key } = getEnvVars();
+      _browser = createBrowserClient(url, key);
+    }
+    return _browser[prop as keyof ReturnType<typeof createBrowserClient>];
+  },
+});
 
 /** Legacy alias for existing callers */
 export const supabase = supabaseBrowser;
@@ -41,7 +57,8 @@ export const supabase = supabaseBrowser;
  * Reads/writes the session cookie so the JWT refreshes on every request.
  */
 export function createServerClient(cookieStore: ReadonlyRequestCookies) {
-  return createSSRServerClient(supabaseUrl, supabaseAnonKey, {
+  const { url, key } = getEnvVars();
+  return createSSRServerClient(url, key, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value;
