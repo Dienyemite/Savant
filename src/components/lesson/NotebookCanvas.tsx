@@ -26,6 +26,7 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
+import { motion } from "framer-motion";
 import getStroke from "perfect-freehand";
 
 // ─────────────────────────────────────────────
@@ -62,7 +63,7 @@ export interface NotebookCanvasHandle {
   clear: () => void;
 }
 
-type Tool = "pen" | "eraser" | "text";
+type Tool = "pen" | "eraser" | "text" | "highlight";
 
 interface NotebookCanvasProps {
   initialState?: CanvasState;
@@ -72,6 +73,12 @@ interface NotebookCanvasProps {
    *  stroke Y coordinates are stored relative to scrollTop so annotations
    *  stay pinned to the content position across scrolling. */
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  /**
+   * Called when a highlight stroke is committed. Provides the screen-space
+   * bounding rect of the stroke — used by Smart Annotation (Sprint 5.3)
+   * to query which lesson text blocks are covered.
+   */
+  onHighlightComplete?: (rect: DOMRect) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -113,6 +120,18 @@ function strokeToPath(stroke: Stroke): string {
 }
 
 // ─────────────────────────────────────────────
+// perfect-freehand config
+// ─────────────────────────────────────────────
+
+const HIGHLIGHT_OPTIONS = {
+  size: 18,
+  thinning: 0.0,
+  smoothing: 0.8,
+  streamline: 0.4,
+  simulatePressure: false,
+};
+
+// ─────────────────────────────────────────────
 // Eraser tolerance (pixels)
 // ─────────────────────────────────────────────
 const ERASER_RADIUS = 18;
@@ -128,7 +147,7 @@ function isStrokeNearPoint(stroke: Stroke, ex: number, ey: number): boolean {
 // ─────────────────────────────────────────────
 
 const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
-  function NotebookCanvas({ initialState, onSave, className = "", scrollRef }, ref) {
+  function NotebookCanvas({ initialState, onSave, className = "", scrollRef, onHighlightComplete }, ref) {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -140,6 +159,9 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
       initialState?.textNodes ?? []
     );
     const [activeStroke, setActiveStroke] = useState<Stroke | null>(null);
+    const [activeHighlightStroke, setActiveHighlightStroke] = useState<Stroke | null>(null);
+    const [highlightStrokes, setHighlightStrokes] = useState<Stroke[]>([]);
+    const [pulsingHighlightId, setPulsingHighlightId] = useState<string | null>(null);
     const [editingTextId, setEditingTextId] = useState<string | null>(null);
     const [visible, setVisible] = useState(false);
 
@@ -159,6 +181,7 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
       clear: () => {
         setStrokes([]);
         setTextNodes([]);
+        setHighlightStrokes([]);
         setHasContent(false);
       },
     }));
@@ -198,6 +221,15 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
           setActiveStroke(newStroke);
           setHasContent(true);
           setVisible(true);
+        } else if (tool === "highlight") {
+          const newHighlight: Stroke = {
+            id: crypto.randomUUID(),
+            points: [pt],
+            size: 18,
+          };
+          setActiveHighlightStroke(newHighlight);
+          setHasContent(true);
+          setVisible(true);
         } else if (tool === "eraser") {
           setStrokes((prev) =>
             prev.filter((s) => !isStrokeNearPoint(s, pt.x, pt.y))
@@ -218,24 +250,63 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
           );
           return;
         }
+        const pt = getRelativePoint(e);
+        if (tool === "highlight" && activeHighlightStroke) {
+          e.preventDefault();
+          setActiveHighlightStroke((prev) =>
+            prev ? { ...prev, points: [...prev.points, pt] } : null
+          );
+          return;
+        }
         if (!activeStroke) return;
         e.preventDefault();
-        const pt = getRelativePoint(e);
         setActiveStroke((prev) =>
           prev ? { ...prev, points: [...prev.points, pt] } : null
         );
       },
-      [tool, activeStroke, getRelativePoint]
+      [tool, activeStroke, activeHighlightStroke, getRelativePoint]
     );
 
     // ── Pointer Up ──
     const handlePointerUp = useCallback(() => {
+      // Commit regular stroke
       if (activeStroke && activeStroke.points.length > 1) {
         setStrokes((prev) => [...prev, activeStroke]);
         onSave?.({ strokes: [...strokes, activeStroke], textNodes });
       }
       setActiveStroke(null);
-    }, [activeStroke, strokes, textNodes, onSave]);
+
+      // Commit highlight stroke
+      if (activeHighlightStroke && activeHighlightStroke.points.length > 1) {
+        setHighlightStrokes((prev) => [...prev, activeHighlightStroke]);
+        setPulsingHighlightId(activeHighlightStroke.id);
+        // Clear pulse after 600ms per spec
+        setTimeout(() => setPulsingHighlightId(null), 600);
+
+        // Compute screen-space bounding rect for Smart Annotation hit-test
+        if (onHighlightComplete && svgRef.current) {
+          const svgRect = svgRef.current.getBoundingClientRect();
+          const scrollY = scrollRef?.current?.scrollTop ?? 0;
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const p of activeHighlightStroke.points) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+          // points are SVG-relative; Y is content-relative (includes scrollY)
+          // convert back to screen-space (viewport coordinates)
+          const screenRect = new DOMRect(
+            minX + svgRect.left,
+            minY - scrollY + svgRect.top,
+            maxX - minX,
+            maxY - minY
+          );
+          onHighlightComplete(screenRect);
+        }
+      }
+      setActiveHighlightStroke(null);
+    }, [activeStroke, activeHighlightStroke, strokes, textNodes, onSave, onHighlightComplete, scrollRef]);
 
     // ── Click for text nodes ──
     const handleClick = useCallback(
@@ -288,6 +359,8 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
         ? "cursor-crosshair"
         : tool === "eraser"
         ? "cursor-cell"
+        : tool === "highlight"
+        ? "cursor-crosshair"
         : "cursor-text";
 
     /** Current scroll offset — used to translate stored content-space
@@ -311,6 +384,45 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
           {/* Committed strokes — translate Y by -scrollY to convert
                content-space coords back to screen-space for rendering. */}
           <g transform={`translate(0, ${-scrollY})`}>
+          {/* Highlight strokes — rendered below ink with blend mode */}
+          {highlightStrokes.map((s) => {
+            const outline = getStroke(
+              s.points.map((p) => [p.x, p.y, p.pressure]),
+              HIGHLIGHT_OPTIONS
+            );
+            const isPulsing = pulsingHighlightId === s.id;
+            return (
+              <motion.path
+                key={s.id}
+                d={getSvgPathFromStrokePoints(outline)}
+                fill="rgba(255, 255, 255, 1)"
+                stroke="none"
+                style={{ mixBlendMode: "screen" }}
+                animate={isPulsing
+                  ? { opacity: [0.22, 0.55, 0.22] }
+                  : { opacity: 0.22 }
+                }
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
+            );
+          })}
+
+          {/* Active highlight being drawn */}
+          {activeHighlightStroke && activeHighlightStroke.points.length > 1 && (() => {
+            const outline = getStroke(
+              activeHighlightStroke.points.map((p) => [p.x, p.y, p.pressure]),
+              HIGHLIGHT_OPTIONS
+            );
+            return (
+              <path
+                d={getSvgPathFromStrokePoints(outline)}
+                fill="rgba(255, 255, 255, 0.18)"
+                stroke="none"
+                style={{ mixBlendMode: "screen" }}
+              />
+            );
+          })()}
+
           {strokes.map((s) => (
             <path
               key={s.id}
@@ -402,6 +514,19 @@ const NotebookCanvas = forwardRef<NotebookCanvasHandle, NotebookCanvasProps>(
             title="Pen (draw)"
           >
             Pen
+          </button>
+
+          <span className="text-white/10">|</span>
+
+          {/* Highlight */}
+          <button
+            onClick={() => setTool("highlight")}
+            className={`px-2 py-1 text-[10px] tracking-widest uppercase transition-colors ${
+              tool === "highlight" ? "text-white border-b border-white/50" : "text-white/30 hover:text-white/60"
+            }`}
+            title="Highlight"
+          >
+            Mark
           </button>
 
           <span className="text-white/10">|</span>

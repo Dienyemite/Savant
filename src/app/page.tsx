@@ -9,8 +9,12 @@ import LessonModal from "@/components/graph/LessonModal";
 import LessonView from "@/components/lesson/LessonView";
 import InfiniteCanvas from "@/components/canvas/InfiniteCanvas";
 import NotebookCover from "@/components/cover/NotebookCover";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useCanvasStore } from "@/store/canvas-store";
 import { useGraphStore } from "@/store/graph-store";
+import { useAuth } from "@/components/AuthProvider";
+import type { ProgressStatus } from "@/types";
+import type { InkStroke, GlobalTextNote } from "@/store/canvas-store";
 
 // React Flow must be loaded client-side only (uses window/DOM APIs)
 const KnowledgeGraph = dynamic(
@@ -20,10 +24,13 @@ const KnowledgeGraph = dynamic(
 
 export default function Home() {
   const isCoverOpen = useCanvasStore((s) => s.isCoverOpen);
-  const applyUserPreferences = useGraphStore((s) => s.applyUserPreferences);
+  const hydrateCanvas = useCanvasStore((s) => s.hydrateCanvas);
+  const { applyUserPreferences, hydrateProgress } = useGraphStore(
+    (s) => ({ applyUserPreferences: s.applyUserPreferences, hydrateProgress: s.hydrateProgress })
+  );
+  const { user } = useAuth();
 
   // Apply onboarding selections persisted to sessionStorage by /onboarding.
-  // Phase 6 will replace this with Supabase user metadata.
   useEffect(() => {
     const raw = sessionStorage.getItem("savant_onboarding");
     if (!raw) return;
@@ -34,6 +41,35 @@ export default function Home() {
       // Malformed sessionStorage value — ignore and use seed defaults.
     }
   }, [applyUserPreferences]);
+
+  // Load persisted progress from Supabase when user is authenticated
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/progress")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { data: { conceptId: string; status: string }[] } | null) => {
+        if (!json?.data) return;
+        hydrateProgress(
+          json.data.map((r) => ({
+            conceptId: r.conceptId,
+            status: r.status as ProgressStatus,
+          }))
+        );
+      })
+      .catch(() => {/* silent — seed defaults remain active */});
+  }, [user, hydrateProgress]);
+
+  // Load persisted global canvas state from Supabase when user is authenticated
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/canvas")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { strokes?: InkStroke[]; textNotes?: GlobalTextNote[] } | null) => {
+        if (!json) return;
+        hydrateCanvas(json.strokes ?? [], json.textNotes ?? []);
+      })
+      .catch(() => {/* silent */});
+  }, [user, hydrateCanvas]);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black notebook-ruled notebook-margin">
@@ -92,7 +128,9 @@ export default function Home() {
 
         {/* Knowledge graph — fills content area right of the margin */}
         <div className="relative z-10 w-full h-full notebook-content">
-          <KnowledgeGraph />
+          <ErrorBoundary>
+            <KnowledgeGraph />
+          </ErrorBoundary>
         </div>
       </InfiniteCanvas>
 
@@ -100,7 +138,9 @@ export default function Home() {
       <GraphLegend />
       <ConceptInfoPanel />
       <LessonModal />
-      <LessonView />
+      <ErrorBoundary>
+        <LessonView />
+      </ErrorBoundary>
 
       {/*
         Phase 2 — The Front Cover

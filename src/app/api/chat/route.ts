@@ -9,13 +9,24 @@ import type { LessonContext } from "@/lib/socratic-prompt";
 // Streams LLM responses using the Vercel AI SDK.
 // Supports Anthropic Claude (primary) and
 // Google Gemini (fallback) as specified.
+//
+// Sprint 5.3: contextType dispatch added.
+//   "socratic"            → buildSocraticSystemPrompt (default)
+//   "highlight_annotation"→ caller-supplied systemPrompt
 // ============================================
 
 export const runtime = "edge";
 
+type ContextType = "socratic" | "highlight_annotation";
+
 interface ChatRequest {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
-  lessonContext: LessonContext;
+  /** Default: "socratic" */
+  contextType?: ContextType;
+  /** Required when contextType === "socratic" */
+  lessonContext?: LessonContext;
+  /** Required when contextType === "highlight_annotation" */
+  systemPrompt?: string;
 }
 
 function getModel() {
@@ -32,11 +43,11 @@ function getModel() {
 
 export async function POST(req: Request) {
   const body = (await req.json()) as ChatRequest;
-  const { messages, lessonContext } = body;
+  const { messages, contextType = "socratic", lessonContext, systemPrompt } = body;
 
-  if (!messages || !lessonContext) {
+  if (!messages) {
     return new Response(
-      JSON.stringify({ error: "Missing messages or lessonContext" }),
+      JSON.stringify({ error: "Missing messages" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -52,11 +63,30 @@ export async function POST(req: Request) {
     );
   }
 
-  const systemPrompt = buildSocraticSystemPrompt(lessonContext);
+  let resolvedSystemPrompt: string;
+
+  if (contextType === "highlight_annotation") {
+    if (!systemPrompt) {
+      return new Response(
+        JSON.stringify({ error: "systemPrompt required for highlight_annotation context" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    resolvedSystemPrompt = systemPrompt;
+  } else {
+    // Default: socratic
+    if (!lessonContext) {
+      return new Response(
+        JSON.stringify({ error: "lessonContext required for socratic context" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    resolvedSystemPrompt = buildSocraticSystemPrompt(lessonContext);
+  }
 
   const result = streamText({
     model,
-    system: systemPrompt,
+    system: resolvedSystemPrompt,
     messages,
     maxOutputTokens: 300,
     temperature: 0.7,

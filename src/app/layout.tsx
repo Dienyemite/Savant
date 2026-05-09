@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Savant — Deep Learning for Young Minds",
@@ -43,7 +44,9 @@ export default function RootLayout({
             </filter>
           </defs>
         </svg>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

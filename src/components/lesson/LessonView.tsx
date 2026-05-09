@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useMemo, useEffect, useRef } from "react";
+import { useCallback, useMemo, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLessonStore } from "@/store/lesson-store";
 import { useGraphStore } from "@/store/graph-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
 import { useCanvasStore } from "@/store/canvas-store";
+import { useChatStore } from "@/store/chat-store";
 import { DOMAIN_LABELS } from "@/types";
+import { buildAnnotationPrompt, streamToMarginalia } from "@/lib/smart-annotation";
 import LessonBlockRenderer from "./LessonBlockRenderer";
 import NotebookCanvas, { type NotebookCanvasHandle } from "./NotebookCanvas";
 import SocraticChat from "./SocraticChat";
 import MarginaliaAnnotations from "./MarginaliaAnnotations";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import SelectionTrigger from "./SelectionTrigger";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 
@@ -51,13 +54,90 @@ export default function LessonView() {
     prevSlide,
     exitLesson,
     completeLesson,
+    updateSpatialIndex,
+    spatialIndex,
+    queryByRect,
   } = useLessonStore();
 
   const { updateProgress, concepts, recentlyUnlockedIds } = useGraphStore();
   const { setStrokeCommitHandler, clearStrokeCommitHandler } = useCanvasStore();
+  const { addMarginaliaEntry, updateMarginalia, finishMarginalia } = useChatStore();
   const canvasRef = useRef<NotebookCanvasHandle>(null);
   /** Ref for the scrollable content column — used by SelectionTrigger */
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Debounced lesson canvas save
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleCanvasSave = useCallback(() => {
+    if (!activeLessonConceptId) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const state = canvasRef.current?.getState();
+      if (!state) return;
+      fetch("/api/canvas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conceptId: activeLessonConceptId,
+          strokes: state.strokes,
+          textNodes: state.textNodes,
+        }),
+      }).catch(() => {/* silent */});
+    }, 500);
+  }, [activeLessonConceptId]);
+
+  // Dev-only: show spatial index debug overlay with ?debug=spatial
+  const [isDebugSpatial, setIsDebugSpatial] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsDebugSpatial(
+        new URLSearchParams(window.location.search).get("debug") === "spatial"
+      );
+    }
+  }, []);
+
+  // Load persisted lesson canvas state when lesson activates
+  useEffect(() => {
+    if (!activeLessonConceptId || !isLessonActive) return;
+    fetch(`/api/canvas?conceptId=${encodeURIComponent(activeLessonConceptId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: { strokes?: unknown[]; textNodes?: unknown[] } | null) => {
+        if (!json) return;
+        canvasRef.current?.loadState({
+          strokes: (json.strokes ?? []) as import("./NotebookCanvas").CanvasState["strokes"],
+          textNodes: (json.textNodes ?? []) as import("./NotebookCanvas").CanvasState["textNodes"],
+        });
+      })
+      .catch(() => {/* silent — blank canvas on load failure */});
+  }, [activeLessonConceptId, isLessonActive]);
+
+  // Load persisted annotations when lesson activates
+  useEffect(() => {
+    if (!activeLessonConceptId || !isLessonActive) return;
+    fetch(`/api/annotations?conceptId=${encodeURIComponent(activeLessonConceptId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (json: {
+          data?: {
+            anchor_y: number;
+            selected_text: string;
+            content: string;
+            annotation_type: string;
+          }[];
+        } | null) => {
+          if (!json?.data) return;
+          for (const a of json.data) {
+            const source = a.annotation_type === "highlight" ? "highlight" : "selection";
+            const id = addMarginaliaEntry(a.anchor_y, a.selected_text, source as "selection" | "highlight");
+            updateMarginalia(id, a.content);
+            finishMarginalia(id);
+          }
+        }
+      )
+      .catch(() => {/* silent */});
+  // Only run once per lesson session — not on every currentSlideIndex change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLessonConceptId, isLessonActive]);
 
   const currentBlock = getCurrentBlock();
   const isLastSlide = currentSlideIndex === totalSlides - 1;
@@ -116,15 +196,43 @@ export default function LessonView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [isLessonActive, canAdvance, handleNext, handlePrev, handleExit]);
 
-  // Register stroke commit handler for Smart Annotation (Sprint 5.3 will replace the stub)
+  // Register stroke commit handler for Smart Annotation
+  // Note: This fires for InkLayer strokes (constellation context).
+  // Lesson-context highlights go through NotebookCanvas.onHighlightComplete below.
   useEffect(() => {
     if (!isLessonActive) return;
     setStrokeCommitHandler((stroke) => {
-      // Stub: Sprint 5.3 will forward this stroke to the annotation engine
-      console.log("[SmartAnnotation] stroke committed", stroke.id, stroke.points.length, "pts");
+      if (stroke.tool !== "highlight") return;
+      // Constellation-level highlight: no-op for now (lesson overlay covers InkLayer)
+      console.log("[SmartAnnotation] constellation highlight", stroke.id);
     });
     return () => clearStrokeCommitHandler();
   }, [isLessonActive, setStrokeCommitHandler, clearStrokeCommitHandler]);
+
+  /**
+   * Called when the user draws a highlight stroke in NotebookCanvas (lesson context).
+   * Queries the spatial index for covered text blocks and streams a margin annotation.
+   */
+  const handleHighlightComplete = useCallback(
+    async (rect: DOMRect) => {
+      const coveredBlocks = queryByRect(rect);
+      if (coveredBlocks.length === 0) return; // stroke not over any lesson text
+
+      const coveredText = coveredBlocks.map((b) => b.text).join(" ");
+      const anchorY = rect.top + rect.height / 2;
+      const marginaliaId = addMarginaliaEntry(anchorY, coveredText, "highlight");
+
+      const annotationPrompt = buildAnnotationPrompt({
+        coveredText,
+        conceptTitle: concept?.title ?? "this concept",
+        slideIndex: currentSlideIndex,
+      });
+
+      await streamToMarginalia(marginaliaId, annotationPrompt);
+      scheduleCanvasSave();
+    },
+    [queryByRect, addMarginaliaEntry, concept, currentSlideIndex, scheduleCanvasSave]
+  );
 
   if (!isLessonActive || !activeLesson) return null;
 
@@ -187,7 +295,10 @@ export default function LessonView() {
               {/* Block content — rendered on the notebook page */}
               <div className="relative z-10">
                 {currentBlock && (
-                  <LessonBlockRenderer block={currentBlock} />
+                  <LessonBlockRenderer
+                    block={currentBlock}
+                    onSpatialUpdate={updateSpatialIndex}
+                  />
                 )}
               </div>
 
@@ -196,13 +307,17 @@ export default function LessonView() {
                 gutter — one per text selection that triggered the tutor.
                 Positioned relative to the content column.
               */}
-              <MarginaliaAnnotations />
+              <MarginaliaAnnotations
+                conceptId={activeLessonConceptId ?? undefined}
+                slideIndex={currentSlideIndex}
+              />
 
               {/* ── Canvas annotation overlay ── */}
               <NotebookCanvas
                 ref={canvasRef}
                 scrollRef={contentRef}
                 className="z-20"
+                onHighlightComplete={handleHighlightComplete}
               />
             </motion.div>
           ) : (
@@ -372,7 +487,9 @@ export default function LessonView() {
       )}
 
       {/* Socratic AI Tutor — side panel (auto-triggered after 2 failures) */}
-      <SocraticChat />
+      <ErrorBoundary>
+        <SocraticChat />
+      </ErrorBoundary>
 
       {/*
         Phase 5: Selection trigger — shows "≣ Ask Savant" button
@@ -381,6 +498,23 @@ export default function LessonView() {
         annotation positioned next to the selected text.
       */}
       <SelectionTrigger containerRef={contentRef} />
+
+      {/* ── Dev: Spatial index debug overlay (?debug=spatial) ── */}
+      {isDebugSpatial && spatialIndex.map((b, i) => (
+        <div
+          key={`${b.blockId}-${b.paragraphIndex}-${i}`}
+          style={{
+            position: "fixed",
+            left: b.rect.left,
+            top: b.rect.top,
+            width: b.rect.width,
+            height: b.rect.height,
+            outline: "1px solid rgba(255, 80, 80, 0.6)",
+            pointerEvents: "none",
+            zIndex: 9999,
+          }}
+        />
+      ))}
     </motion.div>
   );
 }

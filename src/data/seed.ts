@@ -595,6 +595,378 @@ export const LESSONS: Lesson[] = [
     ],
     created_at: new Date().toISOString(),
   },
+  // --- Division Lesson ---
+  {
+    id: "l-division-1",
+    concept_id: "c-division",
+    title: "Sharing Equally",
+    description: "Understand division by splitting groups into equal parts.",
+    order: 0,
+    content_schema: [
+      {
+        id: "div1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Sharing Equally\n\nYou have **12 cookies** to share equally among **4 friends**. How many cookies does each friend get?\n\nDivision answers the question: *How many in each group?*",
+        style: "body",
+      },
+      {
+        id: "div1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Cookies per friend",
+        min: 0,
+        max: 12,
+        step: 1,
+        initial_value: 0,
+        correct_value: 3,
+        unit: "cookies",
+      },
+      {
+        id: "div1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "What is 15 ÷ 3?",
+        options: [
+          { id: "a", text: "3" },
+          { id: "b", text: "4" },
+          { id: "c", text: "5" },
+          { id: "d", text: "6" },
+        ],
+        correct_option_id: "c",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Algebra Intro Lesson ---
+  {
+    id: "l-algebra-1",
+    concept_id: "c-algebra-intro",
+    title: "Finding the Unknown",
+    description: "Use symbols to represent unknown values and solve equations.",
+    order: 0,
+    content_schema: [
+      {
+        id: "alg1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Finding the Unknown\n\nIn algebra, we use a symbol — like **x** — to represent a number we don't know yet.\n\nIf **x + 5 = 8**, what must x be? We can find out by asking: *what plus 5 gives 8?*",
+        style: "body",
+      },
+      {
+        id: "alg1-b2",
+        type: "formula_builder",
+        order: 1,
+        instruction: "Build the solution: x = 8 − 5",
+        available_tokens: ["x", "=", "8", "−", "5", "+", "3", "13"],
+        correct_formula: ["x", "=", "8", "−", "5"],
+      },
+      {
+        id: "alg1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "If 2 × x = 10, what is x?",
+        options: [
+          { id: "a", text: "2" },
+          { id: "b", text: "4" },
+          { id: "c", text: "5" },
+          { id: "d", text: "20" },
+        ],
+        correct_option_id: "c",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Forces & Motion Lesson ---
+  {
+    id: "l-motion-1",
+    concept_id: "c-motion",
+    title: "Push, Pull, Move",
+    description: "Explore how forces cause objects to start, stop, and change direction.",
+    order: 0,
+    content_schema: [
+      {
+        id: "mot1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Push, Pull, Move\n\nA **force** is any push or pull acting on an object. Forces cause objects to speed up, slow down, or change direction.\n\nNewton's second law tells us: **Force = Mass × Acceleration**.",
+        style: "body",
+      },
+      {
+        id: "mot1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Speed after 3 s at 10 m/s² acceleration",
+        min: 0,
+        max: 50,
+        step: 5,
+        initial_value: 0,
+        correct_value: 30,
+        unit: "m/s",
+      },
+      {
+        id: "mot1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "Which of Newton's laws states that objects at rest stay at rest unless acted on by a force?",
+        options: [
+          { id: "a", text: "The First Law (Inertia)" },
+          { id: "b", text: "The Second Law (F = ma)" },
+          { id: "c", text: "The Third Law (action-reaction)" },
+          { id: "d", text: "The Law of Gravity" },
+        ],
+        correct_option_id: "a",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Energy Lesson ---
+  {
+    id: "l-energy-1",
+    concept_id: "c-energy",
+    title: "Energy in Action",
+    description: "Discover how energy transforms between kinetic and potential forms.",
+    order: 0,
+    content_schema: [
+      {
+        id: "en1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Energy in Action\n\n**Energy** is the ability to do work. It cannot be created or destroyed — only *transformed*.\n\nA ball held high has **potential energy**. When released, it converts to **kinetic energy** (the energy of motion).",
+        style: "body",
+      },
+      {
+        id: "en1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Estimated kinetic energy level (1 = slow, 10 = very fast)",
+        min: 1,
+        max: 10,
+        step: 1,
+        initial_value: 1,
+        correct_value: 8,
+        unit: "",
+      },
+      {
+        id: "en1-b3",
+        type: "visual_feedback",
+        order: 2,
+        visualization_type: "bar_chart",
+        data_source: "en1-b2",
+        label: "Kinetic Energy Gauge",
+      },
+      {
+        id: "en1-b4",
+        type: "multiple_choice",
+        order: 3,
+        question: "When a ball rolls to a stop on a flat surface, where does its kinetic energy go?",
+        options: [
+          { id: "a", text: "It disappears entirely" },
+          { id: "b", text: "It converts to heat via friction" },
+          { id: "c", text: "It becomes potential energy" },
+          { id: "d", text: "It stays in the ball as motion" },
+        ],
+        correct_option_id: "b",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Symmetry Lesson ---
+  {
+    id: "l-symmetry-1",
+    concept_id: "c-symmetry",
+    title: "Reflections & Balance",
+    description: "Discover lines of symmetry in shapes and the natural world.",
+    order: 0,
+    content_schema: [
+      {
+        id: "sym1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Reflections & Balance\n\nA shape has **symmetry** if it can be folded along a line so both halves match perfectly. That fold line is called the **axis of symmetry**.",
+        style: "body",
+      },
+      {
+        id: "sym1-b2",
+        type: "drag_drop_match",
+        order: 1,
+        instruction: "Match each shape to its number of lines of symmetry:",
+        items: [
+          { id: "sym-i1", content: "Equilateral triangle" },
+          { id: "sym-i2", content: "Rectangle" },
+          { id: "sym-i3", content: "Regular hexagon" },
+          { id: "sym-i4", content: "Scalene triangle" },
+        ],
+        targets: [
+          { id: "sym-t1", label: "0 lines" },
+          { id: "sym-t2", label: "2 lines" },
+          { id: "sym-t3", label: "3 lines" },
+          { id: "sym-t4", label: "6 lines" },
+        ],
+        correct_mapping: {
+          "sym-i1": "sym-t3",
+          "sym-i2": "sym-t2",
+          "sym-i3": "sym-t4",
+          "sym-i4": "sym-t1",
+        },
+      },
+      {
+        id: "sym1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "A circle has how many lines of symmetry?",
+        options: [
+          { id: "a", text: "1" },
+          { id: "b", text: "4" },
+          { id: "c", text: "8" },
+          { id: "d", text: "Infinitely many" },
+        ],
+        correct_option_id: "d",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Architecture Lesson ---
+  {
+    id: "l-architecture-1",
+    concept_id: "c-architecture",
+    title: "Structure & Form",
+    description: "Learn how geometry and forces combine to create stable structures.",
+    order: 0,
+    content_schema: [
+      {
+        id: "arc1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# Structure & Form\n\nArchitecture uses **geometry** and **physics** together. Every beam, arch, and column must direct forces safely to the ground.\n\nThe **triangle** is the strongest shape in construction — it cannot be deformed without changing the length of its sides.",
+        style: "body",
+      },
+      {
+        id: "arc1-b2",
+        type: "multiple_choice",
+        order: 1,
+        question: "Why is the triangular truss so commonly used in bridges and roofs?",
+        options: [
+          { id: "a", text: "It uses the least material" },
+          { id: "b", text: "It is rigid and cannot flex without breaking" },
+          { id: "c", text: "It looks more attractive than rectangles" },
+          { id: "d", text: "Triangles are easier to manufacture" },
+        ],
+        correct_option_id: "b",
+      },
+      {
+        id: "arc1-b3",
+        type: "formula_builder",
+        order: 2,
+        instruction: "Build the formula for the perimeter of a rectangle: P = 2L + 2W",
+        available_tokens: ["P", "=", "2L", "+", "2W", "×", "L", "W"],
+        correct_formula: ["P", "=", "2L", "+", "2W"],
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Musical Time Signatures Lesson ---
+  {
+    id: "l-rhythm-1",
+    concept_id: "c-rhythm",
+    title: "The Beat of Fractions",
+    description: "Understand time signatures as fractions that govern musical rhythm.",
+    order: 0,
+    content_schema: [
+      {
+        id: "rhy1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# The Beat of Fractions\n\nA **time signature** is a fraction at the start of a piece of music.\n\nIn **4/4 time**, the top number tells us there are 4 beats per bar. The bottom tells us each beat is a quarter note.\n\nRhythm *is* fractions made audible.",
+        style: "body",
+      },
+      {
+        id: "rhy1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "Total beats in 3 bars of 4/4 time",
+        min: 0,
+        max: 16,
+        step: 1,
+        initial_value: 0,
+        correct_value: 12,
+        unit: "beats",
+      },
+      {
+        id: "rhy1-b3",
+        type: "multiple_choice",
+        order: 2,
+        question: "In 3/4 time (waltz), how many beats are in each bar?",
+        options: [
+          { id: "a", text: "2" },
+          { id: "b", text: "3" },
+          { id: "c", text: "4" },
+          { id: "d", text: "8" },
+        ],
+        correct_option_id: "b",
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
+  // --- Sequences Lesson ---
+  {
+    id: "l-sequences-1",
+    concept_id: "c-sequences",
+    title: "What Comes Next?",
+    description: "Find the rules behind number sequences and predict future terms.",
+    order: 0,
+    content_schema: [
+      {
+        id: "seq1-b1",
+        type: "text",
+        order: 0,
+        content:
+          "# What Comes Next?\n\nA **sequence** is an ordered list of numbers following a rule.\n\nLook at: **2, 5, 8, 11, …**\n\nEach term is 3 more than the one before. This is an *arithmetic sequence* with a common difference of 3.",
+        style: "body",
+      },
+      {
+        id: "seq1-b2",
+        type: "interactive_slider",
+        order: 1,
+        label: "5th term in the sequence 2, 5, 8, 11, __",
+        min: 0,
+        max: 20,
+        step: 1,
+        initial_value: 0,
+        correct_value: 14,
+        unit: "",
+      },
+      {
+        id: "seq1-b3",
+        type: "drag_drop_match",
+        order: 2,
+        instruction: "Match each sequence to its rule:",
+        items: [
+          { id: "seq-i1", content: "2, 4, 8, 16, …" },
+          { id: "seq-i2", content: "1, 4, 9, 16, …" },
+          { id: "seq-i3", content: "10, 7, 4, 1, …" },
+        ],
+        targets: [
+          { id: "seq-t1", label: "Subtract 3 each time" },
+          { id: "seq-t2", label: "Square numbers" },
+          { id: "seq-t3", label: "Multiply by 2 each time" },
+        ],
+        correct_mapping: {
+          "seq-i1": "seq-t3",
+          "seq-i2": "seq-t2",
+          "seq-i3": "seq-t1",
+        },
+      },
+    ],
+    created_at: new Date().toISOString(),
+  },
   // --- Pattern Recognition Lesson ---
   {
     id: "l-patterns-1",
@@ -717,5 +1089,146 @@ export const DEFAULT_PROGRESS: Omit<
     last_accessed_at: null,
     completed_at: null,
   },
-  // Everything else is locked by default
+  // Remaining concepts — all locked (prerequisites not yet mastered in demo)
+  {
+    user_id: "demo-student",
+    concept_id: "c-division",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-fractions",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-algebra-intro",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-symmetry",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-architecture",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-rhythm",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-motion",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-energy",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
+  {
+    user_id: "demo-student",
+    concept_id: "c-sequences",
+    status: "locked",
+    productive_struggle_metric: 0.0,
+    total_time_spent_seconds: 0,
+    attempts: 0,
+    last_accessed_at: null,
+    completed_at: null,
+  },
 ];
+
+// ============================================
+// Seed Data Validation (dev-only)
+// Throws on referential integrity errors so
+// mismatches are caught at startup, not runtime.
+// ============================================
+
+export function validateSeedData(): void {
+  if (process.env.NODE_ENV === "production") return;
+
+  const conceptIds = new Set(CONCEPTS.map((c) => c.id));
+  const validBlockTypes = new Set([
+    "text",
+    "interactive_slider",
+    "drag_drop_match",
+    "formula_builder",
+    "multiple_choice",
+    "visual_feedback",
+  ]);
+
+  // Every prerequisite edge must reference existing concepts
+  for (const p of PREREQUISITES) {
+    if (!conceptIds.has(p.concept_id))
+      throw new Error(
+        `validateSeedData: PREREQUISITES references unknown concept_id "${p.concept_id}"`
+      );
+    if (!conceptIds.has(p.prerequisite_id))
+      throw new Error(
+        `validateSeedData: PREREQUISITES references unknown prerequisite_id "${p.prerequisite_id}"`
+      );
+  }
+
+  // Every lesson must reference an existing concept and have valid blocks
+  for (const lesson of LESSONS) {
+    if (!conceptIds.has(lesson.concept_id))
+      throw new Error(
+        `validateSeedData: Lesson "${lesson.id}" references unknown concept_id "${lesson.concept_id}"`
+      );
+    for (const block of lesson.content_schema) {
+      if (!validBlockTypes.has(block.type))
+        throw new Error(
+          `validateSeedData: Block "${block.id}" in lesson "${lesson.id}" has unknown type "${block.type}"`
+        );
+    }
+  }
+}
+
+// Run validation immediately in development
+if (process.env.NODE_ENV !== "production") {
+  validateSeedData();
+}

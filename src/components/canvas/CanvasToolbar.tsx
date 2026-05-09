@@ -50,6 +50,8 @@ export default function CanvasToolbar() {
 
   return (
     <div
+      role="toolbar"
+      aria-label="Drawing tools"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-px"
       style={{ fontFamily: "'Courier New', monospace" }}
     >
@@ -61,6 +63,8 @@ export default function CanvasToolbar() {
               key={id}
               onClick={() => setActiveTool(id)}
               title={`${label}  (${shortcut})`}
+              aria-label={`${label} tool (shortcut: ${shortcut})`}
+              aria-pressed={isActive}
               className={`
                 flex flex-col items-center gap-0.5 w-10 h-10 justify-center
                 transition-all duration-150

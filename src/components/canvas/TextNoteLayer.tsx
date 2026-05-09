@@ -13,8 +13,9 @@
 
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useCanvasStore } from "@/store/canvas-store";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function TextNoteLayer() {
   const {
@@ -32,6 +33,22 @@ export default function TextNoteLayer() {
   const isTextMode = activeTool === "text";
   const { x: vx, y: vy, zoom: vz } = viewport;
   const { x: ox, y: oy } = rfContainerOrigin;
+
+  // Debounced canvas save — 500ms after a note is finished
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleSave = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      const { data } = await supabaseBrowser.auth.getSession();
+      if (!data.session) return;
+      const { strokes, textNotes: notes } = useCanvasStore.getState();
+      fetch("/api/canvas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strokes, textNotes: notes }),
+      }).catch(() => {/* silent */});
+    }, 500);
+  }, []);
 
   // ── Canvas click → spawn note ──
   const handleCanvasClick = useCallback(
@@ -109,7 +126,7 @@ export default function TextNoteLayer() {
                 e.target.style.height = "auto";
                 e.target.style.height = `${e.target.scrollHeight}px`;
               }}
-              onBlur={() => finishNote(note.id)}
+              onBlur={() => { finishNote(note.id); scheduleSave(); }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") finishNote(note.id);
                 if (e.key === "Backspace" && !note.content)

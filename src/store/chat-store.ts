@@ -30,6 +30,8 @@ export interface MarginaliaEntry {
   /** Streamed AI response content */
   content: string;
   isStreaming: boolean;
+  /** "selection" = user selected text; "highlight" = user drew a highlight stroke */
+  source: "selection" | "highlight";
 }
 
 interface ChatState {
@@ -57,7 +59,7 @@ interface ChatState {
   resetChat: () => void;
 
   // Phase 5: Marginalia actions
-  addMarginaliaEntry: (anchorY: number, selectedText: string) => string;
+  addMarginaliaEntry: (anchorY: number, selectedText: string, source?: "selection" | "highlight") => string;
   updateMarginalia: (id: string, content: string) => void;
   finishMarginalia: (id: string) => void;
   removeMarginalia: (id: string) => void;
@@ -132,12 +134,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // ── Phase 5: Marginalia ──
 
-  addMarginaliaEntry: (anchorY, selectedText) => {
+  addMarginaliaEntry: (anchorY, selectedText, source = "selection") => {
     const id = nextId();
     set((s) => ({
       marginaliaEntries: [
         ...s.marginaliaEntries,
-        { id, anchorY, selectedText, content: "", isStreaming: true },
+        { id, anchorY, selectedText, content: "", isStreaming: true, source },
       ],
     }));
     return id;

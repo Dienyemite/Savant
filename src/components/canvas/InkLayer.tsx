@@ -15,6 +15,7 @@
 import { useRef, useCallback } from "react";
 import getStroke from "perfect-freehand";
 import { useCanvasStore } from "@/store/canvas-store";
+import { supabaseBrowser } from "@/lib/supabase";
 
 // ─────────────────────────────────────────────
 // perfect-freehand config — matches gel ink on
@@ -82,6 +83,22 @@ export default function InkLayer() {
   const isHighlight = activeTool === "highlight";
   const isActive = isPen || isEraser || isHighlight;
 
+  // Debounced canvas save — 500ms after last stroke commit
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleSave = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      const { data } = await supabaseBrowser.auth.getSession();
+      if (!data.session) return;
+      const { strokes, textNotes } = useCanvasStore.getState();
+      fetch("/api/canvas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ strokes, textNotes }),
+      }).catch(() => {/* silent */});
+    }, 500);
+  }, []);
+
   const { x: vx, y: vy, zoom: vz } = viewport;
   const { x: ox, y: oy } = rfContainerOrigin;
 
@@ -133,12 +150,14 @@ export default function InkLayer() {
   const onPointerUp = useCallback(() => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
-    if (isPen) commitStroke();
-    else if (isHighlight) commitHighlight();
-  }, [isPen, isHighlight, commitStroke, commitHighlight]);
+    if (isPen) { commitStroke(); scheduleSave(); }
+    else if (isHighlight) { commitHighlight(); scheduleSave(); }
+  }, [isPen, isHighlight, commitStroke, commitHighlight, scheduleSave]);
 
   return (
     <svg
+      role="region"
+      aria-label="Drawing canvas"
       className="fixed inset-0 w-full h-full pointer-events-none"
       style={{
         zIndex: 30,

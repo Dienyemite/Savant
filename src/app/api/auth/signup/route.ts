@@ -1,0 +1,57 @@
+/**
+ * POST /api/auth/signup
+ * Body: { email: string; password: string; display_name: string }
+ *
+ * Creates a new Supabase Auth user and inserts a row into public.users.
+ * Returns: { user, session } or { error }
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseBrowser } from "@/lib/supabase";
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body.email !== "string" || typeof body.password !== "string") {
+    return NextResponse.json({ error: "email and password are required" }, { status: 400 });
+  }
+
+  const { email, password, display_name } = body as {
+    email: string;
+    password: string;
+    display_name?: string;
+  };
+
+  if (password.length < 8) {
+    return NextResponse.json({ error: "password must be at least 8 characters" }, { status: 400 });
+  }
+
+  const { data, error } = await supabaseBrowser.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/confirm`,
+      data: { display_name: display_name ?? email.split("@")[0] },
+    },
+  });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (data.user) {
+    // Insert into public.users — ignore conflicts (e.g., duplicate sign-up)
+    await supabaseBrowser
+      .from("users")
+      .upsert(
+        {
+          id: data.user.id,
+          email: data.user.email!,
+          display_name: display_name ?? email.split("@")[0],
+          role: "student",
+        },
+        { onConflict: "id" }
+      );
+  }
+
+  return NextResponse.json({ user: data.user, session: data.session });
+}

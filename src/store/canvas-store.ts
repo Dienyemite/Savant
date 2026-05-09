@@ -39,6 +39,9 @@ export const LESSON_ZOOM_THRESHOLD = 1.8;
 export interface InkStroke {
   id: string;
   points: [number, number, number][];
+  /** Which tool created this stroke — used by Smart Annotation to distinguish
+   *  highlight strokes (trigger annotation) from regular pen strokes (do not). */
+  tool: CanvasTool;
 }
 
 /** A wide semi-transparent highlight stroke (canvas-space). */
@@ -124,6 +127,10 @@ interface CanvasStore {
   /** Re-enter edit mode on a committed note */
   editNote: (id: string) => void;
   deleteNote: (id: string) => void;
+
+  // ── Persistence (Sprint 6.3) ──
+  /** Restores ink strokes and text notes loaded from Supabase on app init */
+  hydrateCanvas: (strokes: InkStroke[], textNotes: GlobalTextNote[]) => void;
 }
 
 // ─────────────────────────────────────────────
@@ -164,7 +171,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       set({ activePoints: [] });
       return;
     }
-    const stroke: InkStroke = { id: uuidv4(), points: [...activePoints] };
+    const stroke: InkStroke = { id: uuidv4(), points: [...activePoints], tool: "pen" };
     set((s) => ({
       strokes: [...s.strokes, stroke],
       activePoints: [],
@@ -200,20 +207,28 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     })),
 
   commitHighlight: () => {
-    const { activeHighlightPoints } = get();
+    const { activeHighlightPoints, onStrokeCommit } = get();
     if (activeHighlightPoints.length < 2) {
       set({ activeHighlightPoints: [] });
       return;
     }
-    const stroke: HighlightStroke = {
+    const highlight: HighlightStroke = {
       id: uuidv4(),
       points: [...activeHighlightPoints],
       opacity: 0.22,
     };
+    // Also create an InkStroke record with tool: "highlight" so the
+    // Smart Annotation engine can intercept it via onStrokeCommit.
+    const stroke: InkStroke = {
+      id: highlight.id,
+      points: [...activeHighlightPoints],
+      tool: "highlight",
+    };
     set((s) => ({
-      highlightStrokes: [...s.highlightStrokes, stroke],
+      highlightStrokes: [...s.highlightStrokes, highlight],
       activeHighlightPoints: [],
     }));
+    onStrokeCommit?.(stroke);
   },
 
   // ── Text notes ──
@@ -256,4 +271,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set((s) => ({
       textNotes: s.textNotes.filter((n) => n.id !== id),
     })),
+
+  hydrateCanvas: (inkStrokes, inkTextNotes) =>
+    set({ strokes: inkStrokes, textNotes: inkTextNotes }),
 }));

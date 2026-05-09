@@ -1,6 +1,6 @@
 "use client";
 
-import type { LessonBlock } from "@/types";
+import type { LessonBlock, SpatialBlock } from "@/types";
 import TextBlockRenderer from "./blocks/TextBlockRenderer";
 import InteractiveSliderRenderer from "./blocks/InteractiveSliderRenderer";
 import DragDropMatchRenderer from "./blocks/DragDropMatchRenderer";
@@ -16,12 +16,14 @@ import VisualFeedbackRenderer from "./blocks/VisualFeedbackRenderer";
 
 interface Props {
   block: LessonBlock;
+  /** Forwarded to TextBlockRenderer for spatial hit-testing (Sprint 4.4) */
+  onSpatialUpdate?: (blocks: SpatialBlock[]) => void;
 }
 
-export default function LessonBlockRenderer({ block }: Props) {
+export default function LessonBlockRenderer({ block, onSpatialUpdate }: Props) {
   switch (block.type) {
     case "text":
-      return <TextBlockRenderer block={block} />;
+      return <TextBlockRenderer block={block} onSpatialUpdate={onSpatialUpdate} />;
     case "interactive_slider":
       return <InteractiveSliderRenderer block={block} />;
     case "drag_drop_match":

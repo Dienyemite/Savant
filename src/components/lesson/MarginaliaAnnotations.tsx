@@ -15,12 +15,48 @@
 
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Highlighter } from "lucide-react";
 import { useChatStore } from "@/store/chat-store";
 
-export default function MarginaliaAnnotations() {
+interface MarginaliaAnnotationsProps {
+  /** Seed-data concept ID — used to persist annotations to Supabase */
+  conceptId?: string;
+  /** Current slide index — stored with the annotation */
+  slideIndex?: number;
+}
+
+export default function MarginaliaAnnotations({
+  conceptId,
+  slideIndex = 0,
+}: MarginaliaAnnotationsProps) {
   const { marginaliaEntries, removeMarginalia } = useChatStore();
+
+  // Track which entry IDs have been persisted to avoid duplicate POSTs
+  const savedIds = useRef<Set<string>>(new Set());
+
+  // Persist completed annotations to Supabase
+  useEffect(() => {
+    if (!conceptId) return;
+    for (const entry of marginaliaEntries) {
+      if (!entry.isStreaming && entry.content && !savedIds.current.has(entry.id)) {
+        savedIds.current.add(entry.id);
+        fetch("/api/annotations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conceptId,
+            slideIndex,
+            anchorY: entry.anchorY,
+            selectedText: entry.selectedText,
+            content: entry.content,
+            annotationType: entry.source === "highlight" ? "highlight" : "marginalia",
+          }),
+        }).catch(() => {/* silent */});
+      }
+    }
+  }, [marginaliaEntries, conceptId, slideIndex]);
 
   return (
     <AnimatePresence>
@@ -55,13 +91,25 @@ export default function MarginaliaAnnotations() {
               <X className="w-2.5 h-2.5" />
             </button>
 
-            {/* Selected text reference */}
-            <p
-              className="text-[9px] tracking-wider text-white/20 mb-1.5 italic line-clamp-2 pr-3"
-              style={{ fontFamily: "'ivy-presto', serif" }}
-            >
-              &ldquo;{entry.selectedText}&rdquo;
-            </p>
+            {/* Selected text reference or highlight indicator */}
+            {entry.source === "highlight" ? (
+              <div className="flex items-center gap-1 mb-1.5 pr-3">
+                <Highlighter className="w-2.5 h-2.5 text-white/20" />
+                <span
+                  className="text-[9px] tracking-wider text-white/20"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  highlight annotation
+                </span>
+              </div>
+            ) : (
+              <p
+                className="text-[9px] tracking-wider text-white/20 mb-1.5 italic line-clamp-2 pr-3"
+                style={{ fontFamily: "'ivy-presto', serif" }}
+              >
+                &ldquo;{entry.selectedText}&rdquo;
+              </p>
+            )}
 
             {/* AI response — streams in like ink */}
             <div

@@ -4,7 +4,7 @@
 
 // --- Enums ---
 
-export type UserRole = "student" | "teacher";
+export type UserRole = "student" | "teacher" | "admin";
 
 export type ConceptDomain =
   | "math"
@@ -169,3 +169,17 @@ export const DOMAIN_LABELS: Record<ConceptDomain, string> = {
   language: "Language",
   logic: "Logic & Reasoning",
 };
+
+// --- Spatial index (Sprint 4.4 — Smart Annotation prerequisite) ---
+
+/**
+ * Screen-space bounding box for a single paragraph/heading inside a
+ * TextBlockRenderer. Used by the Smart Annotation engine to match
+ * highlight strokes to the underlying text they cover.
+ */
+export interface SpatialBlock {
+  blockId: string;
+  paragraphIndex: number; // 0-based within the block
+  text: string;           // raw text content of this paragraph
+  rect: DOMRect;          // current screen-space bounding box
+}

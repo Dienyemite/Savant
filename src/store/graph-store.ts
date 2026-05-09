@@ -7,6 +7,7 @@ import {
   ProgressStatus,
 } from "@/types";
 import { CONCEPTS, PREREQUISITES, LESSONS, DEFAULT_PROGRESS } from "@/data/seed";
+import { supabaseBrowser } from "@/lib/supabase";
 
 // ============================================
 // Knowledge Graph Store
@@ -39,6 +40,12 @@ interface GraphState {
   closeLessonModal: () => void;
   updateProgress: (conceptId: string, status: ProgressStatus) => void;
   clearMasteryAnimation: () => void;
+  /**
+   * Hydrates the progress map from data fetched from Supabase.
+   * Called on app init (page.tsx) when a session is available.
+   * Merges fetched records over DEFAULT_PROGRESS (DB wins).
+   */
+  hydrateProgress: (records: { conceptId: string; status: ProgressStatus }[]) => void;
   /**
    * Seeds the progress map based on the user's onboarding selections.
    * Called from page.tsx after the user completes /onboarding.
@@ -130,7 +137,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
   closeLessonModal: () => set({ isLessonModalOpen: false }),
 
-  updateProgress: (conceptId, status) =>
+  updateProgress: (conceptId, status) => {
     set((state) => {
       const newMap = new Map(state.progressMap);
       newMap.set(conceptId, status);
@@ -164,10 +171,31 @@ export const useGraphStore = create<GraphState>((set, get) => ({
         recentlyMasteredId: status === "mastered" ? conceptId : null,
         recentlyUnlockedIds: newlyUnlocked,
       };
-    }),
+    });
+
+    // Fire-and-forget: persist to DB when user is authenticated
+    supabaseBrowser.auth.getSession().then(({ data }) => {
+      if (!data.session) return;
+      fetch("/api/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conceptId, status }),
+      }).catch(() => {/* silent — non-blocking */});
+    });
+  },
 
   clearMasteryAnimation: () =>
     set({ recentlyMasteredId: null, recentlyUnlockedIds: [] }),
+
+  hydrateProgress: (records) =>
+    set((state) => {
+      // Start from the default seed progress, then overlay DB records
+      const newMap = buildInitialProgressMap();
+      for (const { conceptId, status } of records) {
+        newMap.set(conceptId, status);
+      }
+      return { progressMap: newMap };
+    }),
 
   applyUserPreferences: (prefs) => {
     const state = get();

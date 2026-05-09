@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 type Path = "self" | "k12" | "college" | null;
 
@@ -52,6 +53,17 @@ const SAMPLE_MAJORS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
+
+  // ── Auth form state ──
+  const [authTab, setAuthTab] = useState<"sign-up" | "sign-in">("sign-up");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authDisplayName, setAuthDisplayName] = useState("");
+  const [authError, setAuthError] = useState<{ field: string; message: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // ── Path form state ──
   const [selectedPath, setSelectedPath] = useState<Path>(null);
   const [subject, setSubject] = useState("");
   const [grade, setGrade] = useState<number | null>(null);
@@ -71,9 +83,62 @@ export default function OnboardingPage() {
     m.toLowerCase().includes(majorQuery.toLowerCase())
   );
 
+  // Validate and submit sign-up form
+  const handleSignUp = async () => {
+    setAuthError(null);
+    if (!authEmail.includes("@")) {
+      setAuthError({ field: "email", message: "Enter a valid email address." });
+      return;
+    }
+    if (authPassword.length < 8) {
+      setAuthError({ field: "password", message: "Password must be at least 8 characters." });
+      return;
+    }
+    setAuthLoading(true);
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: authEmail,
+        password: authPassword,
+        display_name: authDisplayName.trim() || undefined,
+      }),
+    });
+    const json: { error?: string } = await res.json();
+    setAuthLoading(false);
+    if (json.error) {
+      setAuthError({ field: "form", message: json.error });
+    }
+    // On success AuthProvider.onAuthStateChange fires; no further action needed here
+  };
+
+  // Validate and submit sign-in form
+  const handleSignIn = async () => {
+    setAuthError(null);
+    if (!authEmail.includes("@")) {
+      setAuthError({ field: "email", message: "Enter a valid email address." });
+      return;
+    }
+    if (!authPassword) {
+      setAuthError({ field: "password", message: "Enter your password." });
+      return;
+    }
+    setAuthLoading(true);
+    const res = await fetch("/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: authEmail, password: authPassword }),
+    });
+    const json: { error?: string } = await res.json();
+    setAuthLoading(false);
+    if (json.error) {
+      setAuthError({ field: "form", message: json.error });
+    }
+    // On success AuthProvider fires; no further action needed
+  };
+
   const handleBegin = () => {
     // Persist selections to sessionStorage so page.tsx can seed the graph.
-    // Phase 6 will replace this with Supabase user metadata persistence.
     const prefs = {
       path: selectedPath ?? "self",
       gradeLevel: selectedPath === "k12" ? grade : null,
@@ -112,6 +177,164 @@ export default function OnboardingPage() {
             map of concepts you&apos;ll explore.
           </p>
         </header>
+
+        {/* ── Auth section ── */}
+        {user ? (
+          /* Already signed in — show account status */
+          <div
+            className="border border-white/[0.06] px-4 py-3 flex items-center justify-between"
+          >
+            <div>
+              <p
+                className="text-[10px] tracking-widest uppercase text-white/20"
+                style={{ fontFamily: "'Courier New', monospace" }}
+              >
+                Signed in as
+              </p>
+              <p className="text-sm text-white/60 mt-0.5">{user.email}</p>
+            </div>
+            <button
+              onClick={() => signOut()}
+              className="text-[10px] tracking-widest uppercase text-white/20 hover:text-white/50 transition-colors"
+              style={{ fontFamily: "'Courier New', monospace" }}
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          /* Auth form — sign-up / sign-in tabs */
+          <div className="border border-white/[0.06]">
+            {/* Tabs */}
+            <div className="flex border-b border-white/[0.06]">
+              {(["sign-up", "sign-in"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => { setAuthTab(tab); setAuthError(null); }}
+                  className={`flex-1 px-4 py-3 text-[10px] tracking-widest uppercase transition-colors text-left ${
+                    authTab === tab
+                      ? "text-white/60 border-b border-white/30 -mb-px"
+                      : "text-white/20 hover:text-white/40"
+                  }`}
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  {tab === "sign-up" ? "New notebook" : "Return to notebook"}
+                </button>
+              ))}
+            </div>
+
+            {/* Fields */}
+            <div className="px-4 py-4 space-y-0">
+              {/* Email */}
+              <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3 focus-within:border-white/30 transition-colors">
+                <span
+                  className="text-[10px] tracking-widest uppercase text-white/25 w-20 flex-shrink-0"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  Email
+                </span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="flex-1 bg-transparent text-sm text-white/70 placeholder-white/20 outline-none"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                  placeholder="you@example.com"
+                />
+              </div>
+              {authError?.field === "email" && (
+                <p
+                  className="text-[10px] text-white/40 mb-3 -mt-1"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  ↳ {authError.message}
+                </p>
+              )}
+
+              {/* Password */}
+              <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3 focus-within:border-white/30 transition-colors">
+                <span
+                  className="text-[10px] tracking-widest uppercase text-white/25 w-20 flex-shrink-0"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  Password
+                </span>
+                <input
+                  type="password"
+                  autoComplete={authTab === "sign-up" ? "new-password" : "current-password"}
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="flex-1 bg-transparent text-sm text-white/70 placeholder-white/20 outline-none"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                  placeholder="min. 8 characters"
+                />
+              </div>
+              {authError?.field === "password" && (
+                <p
+                  className="text-[10px] text-white/40 mb-3 -mt-1"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  ↳ {authError.message}
+                </p>
+              )}
+
+              {/* Display name (sign-up only) */}
+              <AnimatePresence>
+                {authTab === "sign-up" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3 focus-within:border-white/30 transition-colors">
+                      <span
+                        className="text-[10px] tracking-widest uppercase text-white/25 w-20 flex-shrink-0"
+                        style={{ fontFamily: "'Courier New', monospace" }}
+                      >
+                        Name
+                      </span>
+                      <input
+                        type="text"
+                        autoComplete="name"
+                        value={authDisplayName}
+                        onChange={(e) => setAuthDisplayName(e.target.value)}
+                        className="flex-1 bg-transparent text-sm text-white/70 placeholder-white/20 outline-none"
+                        style={{ fontFamily: "'Courier New', monospace" }}
+                        placeholder="How should Savant address you?"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Form-level error */}
+              {authError?.field === "form" && (
+                <p
+                  className="text-[10px] text-white/40 mb-3"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  ↳ {authError.message}
+                </p>
+              )}
+
+              {/* Submit */}
+              <button
+                onClick={authTab === "sign-up" ? handleSignUp : handleSignIn}
+                disabled={authLoading}
+                className="text-[10px] tracking-[0.22em] uppercase text-white/45 hover:text-white/80 disabled:text-white/20 transition-colors flex items-center gap-1.5 border-b border-white/10 hover:border-white/30 pb-px mt-2"
+                style={{ fontFamily: "'Courier New', monospace" }}
+              >
+                {authLoading
+                  ? "…"
+                  : authTab === "sign-up"
+                  ? "Open new notebook →"
+                  : "Return to notebook →"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Path Index — notebook entries ── */}
         <div className="space-y-0 border border-white/[0.06]">

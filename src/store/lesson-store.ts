@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import type { Lesson, LessonBlock } from "@/types";
+import type { Lesson, LessonBlock, SpatialBlock } from "@/types";
+import { rectIntersects } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
 
@@ -35,6 +36,11 @@ interface LessonState {
   startedAt: number | null; // timestamp ms
   completedAt: number | null;
 
+  // Spatial index for Smart Annotation hit-testing (Sprint 4.4)
+  spatialIndex: SpatialBlock[];
+  updateSpatialIndex: (blocks: SpatialBlock[]) => void;
+  queryByRect: (rect: DOMRect) => SpatialBlock[];
+
   // Derived
   getCurrentBlock: () => LessonBlock | null;
   getBlockAnswer: (blockId: string) => BlockAnswer;
@@ -58,10 +64,25 @@ export const useLessonStore = create<LessonState>((set, get) => ({
   currentSlideIndex: 0,
   totalSlides: 0,
   answers: {},
+  spatialIndex: [],
   isLessonActive: false,
   isLessonComplete: false,
   startedAt: null,
   completedAt: null,
+
+  updateSpatialIndex: (blocks) => {
+    set((state) => {
+      // Merge: replace entries with matching blockId, append new ones
+      const existing = state.spatialIndex.filter(
+        (s) => !blocks.some((b) => b.blockId === s.blockId)
+      );
+      return { spatialIndex: [...existing, ...blocks] };
+    });
+  },
+
+  queryByRect: (rect) => {
+    return get().spatialIndex.filter((b) => rectIntersects(b.rect, rect));
+  },
 
   getCurrentBlock: () => {
     const { activeLesson, currentSlideIndex } = get();
@@ -182,7 +203,7 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       if (sorted[next]) {
         useTelemetryStore.getState().enterSlide(sorted[next].id, sorted[next].type);
       }
-      return { currentSlideIndex: next };
+      return { currentSlideIndex: next, spatialIndex: [] };
     }),
 
   prevSlide: () =>
@@ -195,7 +216,7 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       if (sorted[prev]) {
         useTelemetryStore.getState().enterSlide(sorted[prev].id, sorted[prev].type);
       }
-      return { currentSlideIndex: prev };
+      return { currentSlideIndex: prev, spatialIndex: [] };
     }),
 
   goToSlide: (index) =>

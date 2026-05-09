@@ -7,13 +7,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * AABB (axis-aligned bounding box) intersection test.
+ * Returns true when two DOMRects overlap in both axes.
+ * Used by lesson-store.queryByRect for Smart Annotation hit-testing.
+ */
+export function rectIntersects(a: DOMRect, b: DOMRect): boolean {
+  return (
+    a.left < b.right &&
+    a.right > b.left &&
+    a.top < b.bottom &&
+    a.bottom > b.top
+  );
+}
+
+/**
  * Returns the screen-space DOMRect of a highlight stroke given the current
  * viewport transform. Used by the Smart Annotation engine (Sprint 5.3) to
  * determine which lesson text blocks are covered by a highlight.
- *
- * @param stroke  - The canvas-space HighlightStroke to measure
- * @param viewport - Current ReactFlow viewport {x, y, zoom}
- * @param rfContainerOrigin - Screen-space top-left of the RF container
  */
 export function getHighlightBoundingBox(
   stroke: HighlightStroke,
