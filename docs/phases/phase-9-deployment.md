@@ -3,10 +3,11 @@
 ## Status: 0% Complete
 
 ## Overview
-Takes the application from local development to a production deployment on Vercel
-with a live Supabase project. Covers environment variable management, build
-verification, Supabase production configuration, domain setup, and the CI/CD
-pipeline that gates every merge to `main`.
+Completes the production deployment on the existing **Vercel project ("Savant")**
+with a live Supabase project. The Vercel project is already connected to the
+repository; this phase covers environment variable configuration, Supabase
+production setup, domain setup, and the CI/CD pipeline that gates every merge
+to `main`.
 
 ---
 
@@ -73,15 +74,23 @@ The following must be complete before any deployment attempt:
 
 ---
 
-## Sprint 9.3 — Vercel Deployment  ❌ NOT STARTED
+## Sprint 9.3 — Vercel Project Configuration  ❌ NOT STARTED
+
+### Context
+The project is already deployed on Vercel under the project name **"Savant"**.
+The GitHub repository is already connected and auto-deploys on push to `main`.
+This sprint covers completing the environment variable setup and verifying the
+deployment is production-ready.
 
 ### Tasks
 
-#### 9.3.1 Initial deployment
-- [ ] Connect the GitHub repository to a new Vercel project
-- [ ] Set framework preset to **Next.js**
-- [ ] Set root directory to `.` (the workspace root)
-- [ ] Deploy from `main` branch
+#### 9.3.1 Verify existing project settings
+- [ ] Confirm in Vercel Dashboard → Settings → General:
+  - Framework preset is **Next.js**
+  - Root directory is `.`
+  - Build command is `next build` (default)
+  - Output directory is `.next` (default)
+- [ ] Confirm auto-deploy is triggered from the `main` branch
 
 #### 9.3.2 Environment variables on Vercel
 Set the following in Vercel Dashboard → Settings → Environment Variables:
@@ -153,7 +162,8 @@ Set the following in Vercel Dashboard → Settings → Environment Variables:
   - Disallow force pushes to `main`
 
 #### 9.4.3 Vercel auto-deploy integration
-- [ ] Vercel automatically deploys `main` on push (default behaviour)
+- [ ] Verify Vercel is already auto-deploying on push to `main` (should be
+  active by default in the existing "Savant" project)
 - [ ] Configure Vercel to cancel in-progress deployments when a new push arrives
   (Settings → Git → Cancel In-Progress Deployments)
 - [ ] Preview deployments on pull requests should not use real API keys —
@@ -171,10 +181,10 @@ Set the following in Vercel Dashboard → Settings → Environment Variables:
 
 ### Tasks
 - [ ] Purchase or transfer domain (e.g., `trysavant.app` or `savant.study`)
-- [ ] Add domain to Vercel project: Settings → Domains → Add
+- [ ] In the existing **"Savant"** Vercel project: Settings → Domains → Add custom domain
 - [ ] Verify DNS propagation (Vercel provides CNAME or A record to set)
 - [ ] Update Supabase `Site URL` to the custom domain
-- [ ] Update Vercel `NEXTAUTH_URL` environment variable to the custom domain
+- [ ] Update the `NEXTAUTH_URL` environment variable in the Vercel project to the custom domain
 - [ ] Verify SSL certificate is auto-provisioned by Vercel (Let's Encrypt)
 
 ### Acceptance criteria
@@ -192,7 +202,8 @@ Set the following in Vercel Dashboard → Settings → Environment Variables:
   3. For production DB issues: restore from Supabase automatic daily backup (free tier
      has 7-day PITR)
 - [ ] Create a `staging` Supabase project for testing migrations before production push
-- [ ] Add a `staging` deployment environment in Vercel pointing to the `staging` branch
+- [ ] Add a `staging` deployment environment in the existing **"Savant"** Vercel project
+  (Dashboard → Settings → Environments → Add) pointing to the `staging` branch
 
 ---
 
