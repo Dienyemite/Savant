@@ -134,7 +134,7 @@ export default function KnowledgeGraph() {
   );
 
   const handleInit = useCallback(
-    (rf: ReactFlowInstance) => {
+    (rf: ReactFlowInstance<Node<ConceptNodeData>, Edge>) => {
       const vp = rf.getViewport();
       setViewport(vp.x, vp.y, vp.zoom);
     },
