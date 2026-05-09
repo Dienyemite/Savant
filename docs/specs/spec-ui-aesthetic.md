@@ -98,6 +98,7 @@ They are used only on `ConceptNode` domain badges and `GraphLegend`.
 | Token | Size | Line height | Font | Usage |
 |-------|------|-------------|------|-------|
 | Display | 48px | 1.1 | ivy-presto | Cover title "Savant" |
+| Tagline | 20px | 1.3 | ivy-presto italic | Cover tagline beneath the display title |
 | H1 | 28px | 1.2 | ivy-presto | Lesson primary heading (`# `) |
 | H2 | 20px | 1.3 | ivy-presto | Lesson section heading (`## `) |
 | Body | 16px | 1.75 | ivy-presto | Lesson paragraph text |
@@ -232,6 +233,14 @@ Offsets content to the right of the margin line.
 .notebook-nav-margin { width: 72px; }
 ```
 
+#### Domain section labels
+Domain names are rendered as vertical text within this margin, one label per
+active domain positioned adjacent to that domain cluster's approximate midpoint
+on the constellation. Font: Courier New 9px, `rgba(255,255,255,0.22)`, all-caps,
+`letter-spacing: 0.2em`, `writing-mode: vertical-rl`, `transform: rotate(180deg)`.
+These are purely decorative — no click target. They do not scroll with the
+React Flow viewport.
+
 ### `.notebook-panel`
 Used for floating panels (InfoPanel, LessonModal, Toolbar).
 ```css
@@ -351,6 +360,13 @@ exit: { opacity: 0, y: -60, scale: 0.97, rotateX: -6 }
 transition: { duration: 0.85, ease: [0.4, 0, 0.2, 1] }
 ```
 
+### ⌘K search overlay entrance
+```ts
+initial: { opacity: 0, y: -8 }
+animate: { opacity: 1, y: 0 }
+transition: { duration: 0.15, ease: "easeOut" }
+```
+
 ---
 
 ## 9. Layout Constants
@@ -363,6 +379,9 @@ transition: { duration: 0.85, ease: [0.4, 0, 0.2, 1] }
 | Panel width (info) | 280px | ConceptInfoPanel, LessonModal |
 | Marginalia width | 240px | MarginaliaAnnotations right panel |
 | Lesson content max-width | 680px | LessonView content column |
+| Slide thumbnail strip width | 40px | Lesson navigation strip in the binding margin |
+| Search overlay max-width | 480px | ⌘K concept search overlay |
+| Grid view card size | 180×120px | Compact constellation grid mode cards |
 
 ---
 
@@ -370,6 +389,14 @@ transition: { duration: 0.85, ease: [0.4, 0, 0.2, 1] }
 
 - **No rounded corners**: `--radius: 0rem`. Every element is sharp-cornered.
 - **No shadows** (only glows): `box-shadow` with rgba only — no `drop-shadow(black)`.
+- **Secondary CTA ghost buttons**: Courier New 11px, `text-white/40`,
+  `hover:text-white/70`, no border, no background. Used for supplementary actions
+  (e.g., "▶ What is Savant?" on the cover) that must not compete visually with
+  primary CTAs.
+- **Checkboxes (MultipleChoice)**: 14×14px square, no `border-radius`.
+  Unchecked: `border: 1px solid rgba(255,255,255,0.3)`. Correct selection: `✓` in
+  `text-white/80` + `.glow-border`. Incorrect selection: `✗` in `text-white/30`,
+  dimmed background `rgba(255,255,255,0.03)`.
 - **No coloured backgrounds**: only black or near-black (`rgba(0,0,0,0.x)`).
 - **Borders are always `1px`**: never 2px or thicker.
 - **Icons**: `lucide-react`, size 16px for UI labels, 20px for toolbar buttons.
@@ -389,3 +416,48 @@ transition: { duration: 0.85, ease: [0.4, 0, 0.2, 1] }
   Use only for decorative/non-text elements (locked node dashes, rule lines).
 - Every interactive element must have a visible `:focus-visible` ring.
 - Never rely on colour alone to communicate state (use shape + label + colour).
+
+---
+
+## 12. UX Patterns (Derived from Design Research)
+
+Recurring patterns established through UX research and visual reference analysis.
+All must conform to §2–§10 above. Implementation details are in the component
+spec files referenced.
+
+### Cover feature section
+A 4-item row on `NotebookCover` beneath the CTA buttons. Each item has:
+- No card background or border-radius
+- A left `1px solid rgba(255,255,255,0.12)` border
+- `padding-left: 12px`, narrow equal-width columns
+- Heading in Courier New 11px, `text-white/50`
+- Body in ivy-presto 13px, `text-white/40`
+
+No icons, no colour. Serves as inline "What Savant Does" copy.
+See `spec-onboarding-ux.md §3` for implementation.
+
+### Slide thumbnail strip
+A 40px-wide vertical strip rendered in the 72px binding margin during lesson
+view. Each thumbnail slot contains only the slide number (Courier New 9px,
+centred). The active slide has a `1px solid rgba(255,255,255,0.5)` left border —
+the sole active-state affordance. No content previews.
+See `spec-canvas-engine.md` for lesson layout implementation.
+
+### Concept grid card
+Used in the compact grid view mode of the Knowledge Constellation.
+Each card: `.notebook-panel` border, 180×120px, sharp corners.
+- Line 1: domain label, Courier New 9px, `text-white/30`, all-caps
+- Line 2: concept title, ivy-presto 14px, `text-white/85`, `.text-glow-subtle`
+- Bottom row: `StatusDot` + lesson count, Courier New 9px, `text-white/30`
+
+See `spec-knowledge-graph.md §10` for full spec.
+
+### ⌘K concept search overlay
+A keyboard-triggered concept jump overlay rendered at z-50 in `page.tsx`.
+Visual shell: `.notebook-panel` container, max-width 480px, centred at `pt-[20vh]`.
+- Input: Courier New 13px, `placeholder:text-white/30`, `border-b border-white/12`,
+  no outer border
+- Result rows: Courier New 13px, `hover:bg-white/5`; domain label Courier New 9px
+  `text-white/30` right-aligned; `StatusDot` left-aligned
+
+See `spec-knowledge-graph.md §11` for full spec.

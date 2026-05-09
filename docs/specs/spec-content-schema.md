@@ -80,6 +80,24 @@ interface TextBlock {
 
 No HTML tags, no tables, no code blocks, no image embeds in TextBlock.
 
+**Display-math variant (Phase 4 Sprint 4.4):**
+For slides presenting equations as primary content, `TextBlock.content` may
+contain KaTeX delimiters alongside standard markdown:
+- Block math: `$$...$$` — rendered centred, display mode, white with `.text-glow`
+- Inline math: `$...$` — rendered inline within paragraph text
+
+Example:
+```
+## Projectile Equations
+
+$$x(t) = v_0 \cos\theta \cdot t$$
+
+$$H_{max} = \frac{v_0^2 \sin^2\theta}{2g}$$
+```
+
+`TextBlockRenderer.tsx` must parse `$$...$$` delimiters before the standard
+markdown pass. All KaTeX output inherits `.text-glow` — no coloured math.
+
 **Spatial indexing (Phase 4 Sprint 4.4):**
 After the lesson renders, `LessonView.tsx` must walk all rendered `TextBlock`
 DOM nodes and record their bounding boxes in the lesson store:
@@ -123,7 +141,12 @@ interface MultipleChoiceBlock {
 
 **Renderer behaviour (`MultipleChoiceRenderer.tsx`):**
 - Options displayed with letter indices: A, B, C, D
-- After selection: shows correct (green glow) or incorrect (red glow)
+- Each option renders as a row with a 14×14px **square** checkbox (no border-radius),
+  letter index, and option text in Courier New 13px. No pill buttons.
+  Unchecked: `border: 1px solid rgba(255,255,255,0.3)`. See `spec-ui-aesthetic.md §10`
+  for the checkbox style token.
+- After selection: correct choice shows `✓` in the checkbox + `.glow-border`.
+  Incorrect choice shows `✗` + dimmed `text-white/30`.
 - After any selection: all options lock (no further interaction)
 - `validationState` in `lesson-store` updates immediately on selection
 - 2 incorrect attempts → auto-triggers Socratic chat (`triggerFromFailure`)
@@ -277,10 +300,38 @@ interface PieChartData {
 **VisualFeedbackBlock is display-only — it is never interactive and never
 gates lesson progression.** Use it to visualise concepts after an interactive
 block, not as the interactive block itself.
+### 3.7 Future Block Types
 
----
+The following block types are planned but not yet implemented.
 
-## 4. Seed Data Inventory
+#### `concept_map` (Phase 4)
+A miniature directed graph rendered within a lesson slide, scoped to a subset
+of concepts relevant to the current lesson. Uses SVG rendering consistent with
+`KnowledgeGraph.tsx` — display-only, not interactive within the lesson.
+```ts
+interface ConceptMapBlock {
+  id: string
+  type: "concept_map"
+  nodeIds: string[]           // concept IDs from the global graph
+  highlightedIds?: string[]   // rendered at full opacity; others dimmed
+}
+```
+Nodes: 16px white-filled circles, `rgba(255,255,255,0.6)`. Edges:
+`rgba(255,255,255,0.2)` solid. Labels: Courier New 9px.
+
+#### `media` (Phase 5)
+A video or image reference block. Renders as a plain bordered rectangle with
+a centred `▶` character, title in Courier New 11px, and optional duration label.
+No thumbnail image loading — the placeholder is the content.
+```ts
+interface MediaBlock {
+  id: string
+  type: "media"
+  title: string
+  url: string
+  durationLabel?: string      // e.g., "02:45"
+}
+```
 
 File: `src/data/seed.ts`
 

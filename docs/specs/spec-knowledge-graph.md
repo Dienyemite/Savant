@@ -163,6 +163,31 @@ function handleNodeClick(_event: React.MouseEvent, node: Node) {
 Clicking a locked node opens `ConceptInfoPanel` (shows prerequisites).
 Clicking an unlocked/mastered node opens `LessonModal` (shows lesson list).
 
+### Binding margin domain labels
+Domain names are rendered as vertical Courier New 9px text in the 72px `.notebook-nav-margin`
+in `page.tsx`, each label positioned adjacent to its domain cluster’s approximate
+vertical midpoint on the graph. One label per active domain (domain that has at
+least one unlocked concept).
+
+```tsx
+// In the binding margin <nav> — one entry per active domain
+<span
+  style={{
+    fontFamily: "'Courier New', monospace",
+    fontSize: "9px",
+    letterSpacing: "0.2em",
+    writingMode: "vertical-rl",
+    transform: "rotate(180deg)",
+  }}
+  className="uppercase text-white/22"
+>
+  MATHEMATICS
+</span>
+```
+
+The labels are decorative only — no click target, no scroll binding.
+See `spec-ui-aesthetic.md §5` (`.notebook-nav-margin`) for the style token.
+
 ---
 
 ## 4. ConceptNode.tsx — Three Visual States
@@ -186,6 +211,15 @@ Inner dot (mastered state disc): 36px × 36px, centred.
 ### Label
 Below the node: concept title in Courier New 11px, `text-white/60`, centered.
 Selected state: `text-white/90`, `.text-glow-subtle`.
+
+### Metadata caption
+A second line below the concept title, Courier New 9px, `text-white/28`.
+- `status === "unlocked"`: shows lesson count — e.g., `"2 lessons"`
+- `status === "mastered"`: shows `"mastered"` at `text-white/40`
+- `status === "locked"`: empty line (prevents layout shift)
+
+Only rendered when the concept has been interacted with (i.e., a progress entry
+exists in `progressMap`). On nodes with no progress record, omit the caption.
 
 ### Domain badge
 A 6px × 6px square in the `DOMAIN_COLORS[concept.domain]` colour, positioned
@@ -350,3 +384,127 @@ on app startup.
 - Edges must be memoized: `useMemo(() => buildEdges(prerequisites, progressMap), [prerequisites, progressMap])`
 - Nodes must be memoized: `useMemo(() => buildNodes(concepts, progressMap, selectedConceptId, ...), [...])`
 - See Phase 8 Sprint 8.2 for full performance audit targets
+
+---
+
+## 10. Compact Grid View Mode
+
+Phase 4 Sprint 4.3 adds a toggle between the default constellation (graph) view
+and a compact grid view where concepts render as small ruled cards.
+
+### Toggle
+A `☰` icon button in the toolbar area (alongside the `?` legend button).
+Keyboard shortcut: `G`. The preference is stored in `localStorage` across sessions
+under the key `savant_view_mode` (`"graph"` | `"grid"`).
+
+### Grid card rendering
+Each concept renders as a 180×120px card with `.notebook-panel` border:
+```tsx
+<div className="w-[180px] h-[120px] notebook-panel border border-white/12 p-3
+               flex flex-col cursor-pointer hover:bg-white/5">
+  <span className="font-['Courier_New'] text-[9px] text-white/30 uppercase tracking-widest">
+    {DOMAIN_LABELS[concept.domain]}
+  </span>
+  <span className="mt-1 font-['ivy-presto'] text-[14px] text-white/85 text-glow-subtle">
+    {concept.title}
+  </span>
+  <div className="mt-auto flex items-center gap-2">
+    <StatusDot status={status} />
+    {status !== "locked" && (
+      <span className="font-['Courier_New'] text-[9px] text-white/30">
+        {lessonCount} lesson{lessonCount !== 1 ? "s" : ""}
+      </span>
+    )}
+  </div>
+</div>
+```
+
+Click behaviour mirrors `handleNodeClick`: locked nodes open `ConceptInfoPanel`;
+unlocked/mastered nodes open `LessonModal`.
+
+### Layout
+CSS grid using `grid-cols-[repeat(auto-fill,minmax(180px,1fr))]` within the
+`.notebook-content` area (right of the 72px margin). Gap: 16px. Vertically
+scrollable — no pan/zoom in grid mode.
+
+### Sorting
+Default order:
+1. Mastered concepts (alphabetical within domain)
+2. Unlocked concepts (alphabetical within domain)
+3. Locked concepts (alphabetical within domain)
+
+Domain groups are separated by a single horizontal ruled line and a domain
+label in Courier New 9px, `text-white/30`.
+
+### Transition
+```ts
+initial: { opacity: 0 }
+animate: { opacity: 1 }
+transition: { duration: 0.2, ease: "easeOut" }
+```
+Applied to the grid container when switching modes.
+
+---
+
+## 11. ⌘K Concept Search Overlay
+
+A keyboard-triggered overlay allowing jump navigation to any concept node
+without manually panning the constellation.
+
+### Trigger
+- Keyboard: `⌘K` (Mac) or `Ctrl+K` (Windows/Linux)
+- Does not fire when a `<input>` or `<textarea>` has focus
+- Mounted in `src/app/page.tsx`, listens on `window` keydown
+
+### Visual design
+Centred overlay backed by a full-viewport scrim:
+```tsx
+<div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center pt-[20vh]">
+  <div className="notebook-panel w-[480px] border border-white/20">
+    <input
+      autoFocus
+      placeholder="Search concepts…"
+      className="w-full bg-transparent px-4 py-3
+                 font-['Courier_New'] text-[13px] text-white/90
+                 placeholder:text-white/30 border-b border-white/12 outline-none"
+    />
+    <ul role="listbox" className="max-h-[300px] overflow-y-auto">
+      {results.map(concept => (
+        <li
+          key={concept.id}
+          role="option"
+          className="px-4 py-2 flex items-center gap-3 hover:bg-white/5 cursor-pointer"
+        >
+          <StatusDot status={progressMap.get(concept.id) ?? 'locked'} />
+          <span className="font-['Courier_New'] text-[13px] text-white/80">
+            {concept.title}
+          </span>
+          <span className="ml-auto font-['Courier_New'] text-[9px] text-white/30 uppercase">
+            {DOMAIN_LABELS[concept.domain]}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+```
+
+### Search logic
+- Filters `graph-store.concepts[]` by case-insensitive substring match on
+  `concept.title` and `concept.description`
+- Empty query: shows all concepts sorted by mastery (mastered → unlocked → locked)
+- Max 8 results visible at once; additional results reachable by scroll
+
+### Selection behaviour
+- **Enter** or **click**: closes overlay + pans React Flow viewport to centre on
+  the selected node using:
+  ```ts
+  reactFlowInstance.setCenter(node.position.x, node.position.y,
+    { zoom: 1.2, duration: 400 })
+  ```
+  Also calls `graphStore.selectConcept(concept.id)`.
+- **Escape**: closes overlay, restores keyboard focus to previous element
+
+### State
+Managed entirely in local component state — no store involvement.
+The overlay component is self-contained and conditionally rendered in `page.tsx`.

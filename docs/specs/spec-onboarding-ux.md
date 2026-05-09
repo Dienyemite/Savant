@@ -62,6 +62,9 @@ File: `src/components/cover/NotebookCover.tsx`
 - Binding spine contents: "SAVANT" text rotated 90°, Courier New 11px, `text-white/40`
 - Main area: centred content with ivy-presto typography
 - Title: "Savant" in ivy-presto Display (48px), with `.text-glow`
+- Tagline: one-liner in ivy-presto Tagline (20px italic), `text-white/55`, no glow.
+  Renders between the title and subtitle. Example: *"Think. Question. Know."*
+  See `spec-ui-aesthetic.md §3` for the Tagline type token.
 - Subtitle: "Your personal learning notebook." in ivy-presto Body (16px)
 
 ### Path selector
@@ -129,6 +132,39 @@ Rendered as a vertical list of radio buttons (Courier New 13px).
 - Self-Learning: always true
 - K-12: requires `selectedGrade !== null && selectedSubjects.length >= 1`
 - College: requires `selectedMajor !== null`
+
+### Secondary CTA
+Below the primary "Open Notebook" button: a ghost text link for a brief introduction.
+```tsx
+<button
+  className="font-['Courier_New'] text-[11px] text-white/40 hover:text-white/70
+             transition-colors mt-3 tracking-wider"
+>
+  ▶ What is Savant?
+</button>
+```
+On click: expands an inline `<p>` in ivy-presto 14px, `text-white/55`, describing
+Savant in 2–3 sentences. No modal, no navigation. Click again to collapse (toggle).
+This replaces the "Watch demo" pattern from traditional landing pages.
+See `spec-ui-aesthetic.md §12` for the secondary CTA ghost button style token.
+
+### Cover feature section
+A 4-item row of inline feature descriptions beneath the CTA buttons. Visible once
+`canBegin()` returns true (i.e., the user has made a selection) or always visible
+ — implementation preference.
+
+Each item describes one pillar of the learning system:
+| Heading | Body |
+|---------|------|
+| Active Recall | Questions that surface what you don’t know. |
+| Knowledge Graph | See how concepts connect and unlock. |
+| Ink Annotations | Write, draw, and think directly on the lesson. |
+| Socratic Tutor | An AI guide that asks, never tells. |
+
+Rendered as a horizontal row of narrow columns with left-border only
+(`1px solid rgba(255,255,255,0.12)`). Courier New 11px headings, ivy-presto
+13px body. No colour, no border-radius. See `spec-ui-aesthetic.md §12` for
+the cover feature section pattern.
 
 ---
 
