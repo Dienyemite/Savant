@@ -1,343 +1,425 @@
-"use client";
+﻿"use client";
 
-import { useMemo } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
-import { useTelemetryStore } from "@/store/telemetry-store";
-import { useGraphStore } from "@/store/graph-store";
-import { DOMAIN_LABELS, type ConceptDomain } from "@/types";
-import { ArrowLeft, Clock, Target, Zap, Brain } from "lucide-react";
+import {
+  Search, Bell, Plus, ChevronDown, Book, FileText,
+  Star, Users, Trash2, Crown, LayoutGrid, List, MoreVertical, Pin,
+} from "lucide-react";
 
-// ════════════════════════════════════════════════════════════
-// Analytics Dashboard — Notebook ledger style.
-// Flat ruled rows. No rounded cards. Strict monochrome.
-// ════════════════════════════════════════════════════════════
+// Dashboard - Notebook management UI.
+// Sidebar navigation, page cards grid, activity feed.
 
-function formatTime(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s > 0 ? `${m}m ${s}s` : `${m}m`;
-}
-
-function StruggleRule({ score }: { score: number }) {
-  const label =
-    score >= 0.7 ? "Deep Focus"
-    : score >= 0.4 ? "Engaged"
-    : score > 0 ? "Surface"
-    : "No data";
-
+export default function DashboardPage() {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex-1 h-px bg-white/[0.07] relative">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${score * 100}%` }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-          className="absolute left-0 top-0 h-full"
-          style={{
-            background:
-              score >= 0.7 ? "rgba(255,255,255,0.75)"
-              : score >= 0.4 ? "rgba(255,255,255,0.4)"
-              : "rgba(255,255,255,0.15)",
-          }}
-        />
-      </div>
-      <span
-        className="text-[10px] text-white/25 w-20 text-right"
-        style={{ fontFamily: "'Courier New', monospace" }}
-      >
-        {label}
-      </span>
+    <div className="flex h-screen bg-black text-white overflow-hidden">
+      {/* â”€â”€ Sidebar â”€â”€ */}
+      <aside className="w-64 border-r border-white/20 bg-black flex flex-col shrink-0">
+        {/* Workspace header */}
+        <div className="p-4 border-b border-white/20">
+          <Link href="/" className="flex items-center gap-2 mb-6">
+            <div className="w-6 h-6 bg-white border border-white rounded flex items-center justify-center text-black text-[10px] font-bold">
+              IB
+            </div>
+            <span className="font-medium text-white">Savant</span>
+          </Link>
+          <button className="w-full flex items-center justify-between text-left hover:bg-white/10 p-2 -mx-2 rounded-lg transition-colors">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 border border-white/40 rounded flex items-center justify-center text-xs">
+                NU
+              </div>
+              <div>
+                <div className="text-sm font-medium text-white">Northfield University</div>
+                <div className="text-xs text-white/50">Student Workspace</div>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-white/50" />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
+          <div>
+            <div className="text-xs font-semibold text-white/40 mb-2 px-3 tracking-wider">
+              WORKSPACE
+            </div>
+            <nav className="space-y-0.5">
+              <SidebarItem icon={<Book className="w-4 h-4" />} label="Notebooks" active />
+              <SidebarItem icon={<FileText className="w-4 h-4" />} label="All Pages" />
+              <SidebarItem icon={<Star className="w-4 h-4" />} label="Favorites" />
+              <SidebarItem icon={<Users className="w-4 h-4" />} label="Shared with me" />
+              <SidebarItem icon={<Trash2 className="w-4 h-4" />} label="Trash" />
+            </nav>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between px-3 mb-2">
+              <div className="text-xs font-semibold text-white/40 tracking-wider">CLASSES</div>
+              <Plus className="w-3.5 h-3.5 text-white/50 cursor-pointer hover:text-white" />
+            </div>
+            <nav className="space-y-0.5">
+              <ClassItem label="Physics 201" pages={42} />
+              <ClassItem label="Calculus II" pages={36} />
+              <ClassItem label="History 101" pages={28} />
+              <ClassItem label="Biology 150" pages={31} />
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors mt-1">
+                <Plus className="w-4 h-4" />
+                <span>Add class</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Upgrade + user footer */}
+        <div className="p-4 border-t border-white/20">
+          <div className="bg-black border border-white/20 rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="w-4 h-4 text-white" />
+              <span className="text-sm font-medium text-white">Upgrade to Pro</span>
+            </div>
+            <p className="text-xs text-white/50 mb-3">
+              Unlock unlimited notebooks, offline mode, and more.
+            </p>
+            <button className="w-full bg-white text-black text-sm font-medium py-1.5 rounded-md hover:bg-gray-200 transition-colors">
+              Go Pro
+            </button>
+          </div>
+          <button className="w-full flex items-center justify-between hover:bg-white/10 p-2 -mx-2 rounded-lg transition-colors">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-medium">
+                AJ
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-medium text-white">Ava Johnson</div>
+                <div className="text-xs text-white/40">ava.johnson@northfield.edu</div>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-white/50" />
+          </button>
+        </div>
+      </aside>
+
+      {/* â”€â”€ Main â”€â”€ */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Top header */}
+        <header className="h-16 border-b border-white/20 flex items-center justify-between px-6 bg-black">
+          <div className="relative w-96">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search notebooks, pages, or tags..."
+              className="w-full bg-black border border-white/20 rounded-md pl-9 pr-12 py-1.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/40 transition-colors"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/40 border border-white/20 rounded px-1.5 py-0.5">
+              âŒ˜K
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button className="bg-white text-black px-4 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 transition-colors">
+              <Plus className="w-4 h-4" />
+              New
+              <ChevronDown className="w-3 h-3 ml-1" />
+            </button>
+            <button className="relative text-white/50 hover:text-white transition-colors">
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-white border-2 border-black rounded-full text-black text-[8px] font-bold flex items-center justify-center">
+                3
+              </span>
+            </button>
+            <Link
+              href="/learn"
+              className="text-xs text-white/50 hover:text-white transition-colors border border-white/20 px-3 py-1.5 rounded-md"
+            >
+              Constellation â†—
+            </Link>
+          </div>
+        </header>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Page title & tabs */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-1">Notebooks</h1>
+                  <p className="text-white/50 text-sm">Organize your ideas. Create without limits.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button className="flex items-center gap-2 px-4 py-2 border border-white/20 rounded-md text-sm font-medium hover:bg-white/10 transition-colors">
+                    <Plus className="w-4 h-4 text-white" />
+                    New Notebook
+                  </button>
+                  <Link
+                    href="/canvas"
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    New Page
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 border-b border-white/20 pb-px">
+                <Tab active>All</Tab>
+                <Tab>Physics 201</Tab>
+                <Tab>Calculus II</Tab>
+                <Tab>History 101</Tab>
+                <Tab>Biology 150</Tab>
+                <button className="p-2 text-white/40 hover:text-white">
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Pages grid */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-sm font-semibold text-white">Pages overview</h2>
+                  <span className="text-xs text-white/30">42 pages</span>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-white/50">
+                  <button className="flex items-center gap-1 hover:text-white">
+                    Sort by: Last edited
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  <div className="flex items-center gap-1 border border-white/20 rounded-md p-0.5">
+                    <button className="p-1 bg-white text-black rounded">
+                      <LayoutGrid className="w-4 h-4" />
+                    </button>
+                    <button className="p-1 hover:text-white rounded">
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <PageCard title="Projectile Motion" category="Physics 201" tag="Lecture Notes" time="2h ago" pinned />
+                <PageCard title="Integrals & Substitution" category="Calculus II" tag="Homework Board" time="5h ago" />
+                <PageCard title="Photosynthesis Mind Map" category="Biology 150" tag="Mind Map" time="1d ago" pinned />
+                <PageCard title="French Revolution Notes" category="History 101" tag="Study Guide" time="1d ago" />
+                <PageCard title="Untitled Page" category="Physics 201" tag="Notes" time="2d ago" empty />
+                <PageCard title="Free Body Diagrams" category="Physics 201" tag="Homework Board" time="2d ago" pinned />
+                <PageCard title="Series & Convergence" category="Calculus II" tag="Lecture Notes" time="3d ago" />
+                <PageCard title="Organic Reactions" category="Biology 150" tag="Revision Sheet" time="3d ago" />
+              </div>
+            </div>
+
+            {/* Bottom widgets */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Recent notes */}
+              <Widget title="Recent notes">
+                <div className="space-y-1">
+                  <NoteListItem title="Energy Conservation" meta="Physics 201 â€¢ Edited 1h ago" pinned />
+                  <NoteListItem title="Limits and Continuity" meta="Calculus II â€¢ Edited 6h ago" />
+                  <NoteListItem title="Cell Structure Overview" meta="Biology 150 â€¢ Edited 1d ago" pinned />
+                  <NoteListItem title="Causes of WWI" meta="History 101 â€¢ Edited 2d ago" pinned />
+                  <NoteListItem title="Differential Equations" meta="Calculus II â€¢ Edited 3d ago" />
+                </div>
+              </Widget>
+
+              {/* Favorite pages */}
+              <Widget title="Favorite pages">
+                <div className="space-y-3">
+                  <FavoriteCard title="Projectile Motion" meta="Physics 201 â€¢ Edited 2h ago" />
+                  <FavoriteCard title="Photosynthesis Mind Map" meta="Biology 150 â€¢ Edited 1d ago" />
+                  <FavoriteCard title="Free Body Diagrams" meta="Physics 201 â€¢ Edited 2d ago" />
+                  <FavoriteCard title="Organic Reactions" meta="Biology 150 â€¢ Edited 3d ago" />
+                </div>
+              </Widget>
+
+              {/* Activity */}
+              <Widget title="Activity">
+                <div className="space-y-4">
+                  <ActivityItem user="You" action="edited" target="Projectile Motion" time="2h ago" initials="AJ" />
+                  <ActivityItem user="Emma Wilson" action="commented on" target="Integrals & Substitution" time="5h ago" initials="EW" />
+                  <ActivityItem user="Liam Chen" action="shared" target="Photosynthesis Mind Map" targetSuffix="with you" time="1d ago" initials="LC" />
+                  <ActivityItem user="You" action="pinned" target="Free Body Diagrams" time="2d ago" initials="AJ" />
+                </div>
+              </Widget>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
 
-export default function TeacherDashboard() {
-  const { completedSessions, getConceptMetrics, getAllMetrics } =
-    useTelemetryStore();
-  const { concepts, progressMap } = useGraphStore();
-  const overall = getAllMetrics();
+// â”€â”€ Sub-components â”€â”€
 
-  const masteredCount = Array.from(progressMap.values()).filter(
-    (s) => s === "mastered"
-  ).length;
-  const unlockedCount = Array.from(progressMap.values()).filter(
-    (s) => s === "unlocked"
-  ).length;
-
-  const conceptMetrics = useMemo(() => {
-    const conceptIds = new Set(completedSessions.map((s) => s.conceptId));
-    return Array.from(conceptIds).map((cId) => {
-      const concept = concepts.find((c) => c.id === cId);
-      const metrics = getConceptMetrics(cId);
-      return { concept, metrics };
-    });
-  }, [completedSessions, concepts, getConceptMetrics]);
-
-  const domainStats = useMemo(() => {
-    const domains: Record<
-      string,
-      { count: number; mastered: number; time: number; struggle: number }
-    > = {};
-    for (const c of concepts) {
-      if (!domains[c.domain])
-        domains[c.domain] = { count: 0, mastered: 0, time: 0, struggle: 0 };
-      domains[c.domain].count++;
-      if (progressMap.get(c.id) === "mastered") domains[c.domain].mastered++;
-    }
-    for (const session of completedSessions) {
-      const concept = concepts.find((c) => c.id === session.conceptId);
-      if (concept && domains[concept.domain]) {
-        domains[concept.domain].time += session.totalTimeSeconds;
-        domains[concept.domain].struggle += session.productiveStruggleScore;
-      }
-    }
-    return Object.entries(domains).map(([domain, stats]) => ({
-      domain: domain as ConceptDomain,
-      ...stats,
-      avgStruggle: stats.mastered > 0 ? stats.struggle / stats.mastered : 0,
-    }));
-  }, [concepts, progressMap, completedSessions]);
-
+function SidebarItem({ icon, label, active = false }: { icon: React.ReactNode; label: string; active?: boolean }) {
   return (
-    <main className="min-h-screen bg-black text-white notebook-ruled notebook-margin">
-      <div className="max-w-3xl mx-auto px-16 py-10 space-y-12">
+    <button
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+        active ? "bg-white text-black font-medium" : "text-white/50 hover:text-white hover:bg-white/10"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
 
-        {/* ── Page header ── */}
-        <header className="border-b border-white/[0.06] pb-5">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[10px] tracking-widest uppercase text-white/20 hover:text-white/50 transition-colors mb-6"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Constellation
-          </Link>
-          <p
-            className="text-[10px] tracking-[0.25em] uppercase text-white/20 mb-1"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            II. Analytics
-          </p>
-          <h1 className="text-xl text-white/70">
-            Productive Struggle Report
-          </h1>
-        </header>
-
-        {/* ── Overview — four key figures ── */}
-        <section>
-          <p
-            className="text-[9px] tracking-[0.22em] uppercase text-white/20 border-b border-white/[0.05] pb-2 mb-4"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Overview
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px border border-white/[0.06]">
-            {[
-              {
-                icon: Brain,
-                value: String(overall.totalLessonsCompleted),
-                label: "Lessons",
-              },
-              {
-                icon: Clock,
-                value: formatTime(overall.totalTimeSeconds),
-                label: "Time",
-              },
-              {
-                icon: Zap,
-                value:
-                  overall.averageStruggleScore > 0
-                    ? `${Math.round(overall.averageStruggleScore * 100)}%`
-                    : "—",
-                label: "Avg Focus",
-              },
-              {
-                icon: Target,
-                value: String(overall.totalInteractions),
-                label: "Interactions",
-              },
-            ].map((item) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="px-4 py-5 border-r border-white/[0.06] last:border-r-0 space-y-2"
-              >
-                <item.icon className="w-4 h-4 text-white/20" />
-                <p
-                  className="text-2xl text-white/70"
-                  style={{ fontFamily: "'Courier New', monospace" }}
-                >
-                  {item.value}
-                </p>
-                <p
-                  className="text-[9px] tracking-widest uppercase text-white/20"
-                  style={{ fontFamily: "'Courier New', monospace" }}
-                >
-                  {item.label}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Knowledge progress ── */}
-        <section className="space-y-4">
-          <p
-            className="text-[9px] tracking-[0.22em] uppercase text-white/20 border-b border-white/[0.05] pb-2"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Knowledge Progress — {masteredCount}/{concepts.length}
-          </p>
-          {/* Overall ruled bar */}
-          <div className="relative h-px bg-white/[0.06]">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${(masteredCount / Math.max(concepts.length, 1)) * 100}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="absolute left-0 top-0 h-full bg-white/60"
-            />
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{
-                width: `${((masteredCount + unlockedCount) / Math.max(concepts.length, 1)) * 100}%`,
-              }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="absolute left-0 top-0 h-full bg-white/20"
-            />
-          </div>
-          <div
-            className="flex justify-between text-[10px] text-white/25"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            <span>{masteredCount} mastered · {unlockedCount} in progress</span>
-            <span>{concepts.length - masteredCount - unlockedCount} locked</span>
-          </div>
-
-          {/* Domain table */}
-          <div className="mt-2 border border-white/[0.06]">
-            <div
-              className="grid grid-cols-4 border-b border-white/[0.06] px-4 py-2 text-[9px] tracking-[0.18em] uppercase text-white/20"
-              style={{ fontFamily: "'Courier New', monospace" }}
-            >
-              <span>Domain</span>
-              <span className="text-center">Mastered</span>
-              <span className="text-center">Time</span>
-              <span className="text-right">Focus</span>
-            </div>
-            {domainStats.map((d) => (
-              <div
-                key={d.domain}
-                className="grid grid-cols-4 items-center px-4 py-3 border-b border-white/[0.04] last:border-b-0"
-              >
-                <span className="text-[11px] text-white/45">
-                  {DOMAIN_LABELS[d.domain]}
-                </span>
-                <span
-                  className="text-center text-[10px] text-white/30"
-                  style={{ fontFamily: "'Courier New', monospace" }}
-                >
-                  {d.mastered}/{d.count}
-                </span>
-                <span
-                  className="text-center text-[10px] text-white/25"
-                  style={{ fontFamily: "'Courier New', monospace" }}
-                >
-                  {d.time > 0 ? formatTime(d.time) : "—"}
-                </span>
-                <span
-                  className="text-right text-[10px] text-white/25"
-                  style={{ fontFamily: "'Courier New', monospace" }}
-                >
-                  {d.avgStruggle > 0
-                    ? `${Math.round(d.avgStruggle * 100)}%`
-                    : "—"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Per-concept breakdown ── */}
-        <section className="space-y-4">
-          <p
-            className="text-[9px] tracking-[0.22em] uppercase text-white/20 border-b border-white/[0.05] pb-2"
-            style={{ fontFamily: "'Courier New', monospace" }}
-          >
-            Productive Struggle by Concept
-          </p>
-
-          {conceptMetrics.length === 0 ? (
-            <div className="py-12 text-center">
-              <p
-                className="text-[11px] text-white/25"
-                style={{ fontFamily: "'Courier New', monospace" }}
-              >
-                No lessons completed yet.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-0 border border-white/[0.06]">
-              {conceptMetrics.map(({ concept, metrics }, idx) => {
-                if (!concept) return null;
-                return (
-                  <motion.div
-                    key={metrics.conceptId}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="px-4 py-4 border-b border-white/[0.04] last:border-b-0 space-y-3"
-                  >
-                    {/* Title row */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-white/65">{concept.title}</p>
-                        <p
-                          className="text-[9px] tracking-widest uppercase text-white/20 mt-0.5"
-                          style={{ fontFamily: "'Courier New', monospace" }}
-                        >
-                          {DOMAIN_LABELS[concept.domain]}
-                        </p>
-                      </div>
-                      <span
-                        className="text-[10px] text-white/20"
-                        style={{ fontFamily: "'Courier New', monospace" }}
-                      >
-                        {metrics.sessionsCompleted}×
-                      </span>
-                    </div>
-
-                    {/* Focus bar */}
-                    <StruggleRule score={metrics.averageStruggleScore} />
-
-                    {/* Detail row */}
-                    <div
-                      className="flex flex-wrap gap-4 text-[10px] text-white/25"
-                      style={{ fontFamily: "'Courier New', monospace" }}
-                    >
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatTime(metrics.totalTimeSeconds)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Target className="w-3 h-3" />
-                        {metrics.totalAttempts} attempts
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Zap className="w-3 h-3" />
-                        {metrics.totalInteractions} interactions
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
+function ClassItem({ label, pages }: { label: string; pages: number }) {
+  return (
+    <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 transition-colors group">
+      <div className="flex items-center gap-3">
+        <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold border border-white/30 text-white">
+          {label[0]}
+        </div>
+        <div className="text-left">
+          <div className="text-sm text-white">{label}</div>
+          <div className="text-xs text-white/30">{pages} pages</div>
+        </div>
       </div>
-    </main>
+    </button>
+  );
+}
+
+function Tab({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
+  return (
+    <button
+      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+        active ? "border-white text-white" : "border-transparent text-white/50 hover:text-white"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PageCard({
+  title, category, tag, time, pinned = false, empty = false,
+}: {
+  title: string; category: string; tag: string; time: string; pinned?: boolean; empty?: boolean;
+}) {
+  return (
+    <Link
+      href="/canvas"
+      className="bg-black border border-white/20 hover:border-white/60 rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-colors"
+    >
+      <div
+        className="h-32 bg-black relative border-b border-white/20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0)",
+          backgroundSize: "16px 16px",
+        }}
+      >
+        <button className="absolute top-2 left-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <Pin className={`w-4 h-4 ${pinned ? "fill-current" : ""}`} />
+        </button>
+        <button className="absolute top-2 right-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <Star className="w-4 h-4" />
+        </button>
+        {!empty && (
+          <div className="absolute inset-4 flex items-center justify-center opacity-30">
+            <div className="w-full h-full border border-dashed border-white rounded-lg" />
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-sm font-medium text-white truncate pr-2">{title}</h3>
+          <button className="text-white/50 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] px-1.5 py-0.5 rounded border border-white/20 text-white/50 bg-black">
+            {tag}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-white/30">
+          <div className="flex gap-2">
+            <span>{category}</span>
+            <span>Edited {time}</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function Widget({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-black border border-white/20 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <button className="text-xs text-white/50 underline hover:no-underline">View all</button>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function NoteListItem({ title, meta, pinned = false }: { title: string; meta: string; pinned?: boolean }) {
+  return (
+    <div className="flex items-center justify-between p-2 hover:bg-white/10 rounded-lg group cursor-pointer border border-transparent hover:border-white/20">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded bg-black border border-white/20 flex items-center justify-center text-white/40">
+          <FileText className="w-4 h-4" />
+        </div>
+        <div>
+          <div className="text-sm font-medium text-white">{title}</div>
+          <div className="text-xs text-white/30">{meta}</div>
+        </div>
+      </div>
+      <Pin
+        className={`w-4 h-4 transition-all ${
+          pinned
+            ? "text-white fill-current"
+            : "text-white/30 opacity-0 group-hover:opacity-100 hover:text-white"
+        }`}
+      />
+    </div>
+  );
+}
+
+function FavoriteCard({ title, meta }: { title: string; meta: string }) {
+  return (
+    <div className="flex items-center justify-between p-2 hover:bg-white/10 border border-white/20 rounded-lg group cursor-pointer bg-black">
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded bg-black border border-white/20 relative overflow-hidden"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
+            backgroundSize: "8px 8px",
+          }}
+        >
+          <div className="absolute inset-1 border border-dashed border-white/30 rounded-sm" />
+        </div>
+        <div>
+          <div className="text-sm font-medium text-white">{title}</div>
+          <div className="text-xs text-white/30">{meta}</div>
+        </div>
+      </div>
+      <Star className="w-4 h-4 text-white fill-current" />
+    </div>
+  );
+}
+
+function ActivityItem({
+  user, action, target, targetSuffix, time, initials,
+}: {
+  user: string; action: string; target: string; targetSuffix?: string; time: string; initials: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs font-medium text-white shrink-0">
+        {initials}
+      </div>
+      <div className="flex-1">
+        <div className="text-sm text-white/50 leading-snug">
+          <span className="font-medium text-white">{user}</span> {action}{" "}
+          <span className="text-white italic">{target}</span> {targetSuffix}
+        </div>
+        <div className="text-xs text-white/30 mt-0.5">{time}</div>
+      </div>
+      <div className="w-1.5 h-1.5 rounded-full mt-2 bg-white shrink-0" />
+    </div>
   );
 }

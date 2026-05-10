@@ -6,7 +6,8 @@
  * the session never expires silently.
  *
  * Route protection:
- *   - "/" and "/dashboard" require a valid session → redirect to /onboarding
+ *   - "/dashboard" requires a valid session → redirect to /onboarding
+ *   - "/" is accessible without auth — seed data works, cloud features degrade gracefully
  *   - "/onboarding" is always accessible (even when logged in)
  *   - "/api/chat" is always accessible (dev bypass per spec)
  *   - All other /api/* routes are handled by individual route files
@@ -44,7 +45,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protected pages: redirect to onboarding if no session
-  const isProtected = pathname === "/" || pathname.startsWith("/dashboard");
+  const isProtected = pathname.startsWith("/dashboard");
   if (isProtected && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/onboarding";
