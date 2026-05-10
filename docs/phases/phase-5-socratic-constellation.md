@@ -123,7 +123,7 @@ type MarginaliaEntry = {
 
 ---
 
-## Sprint 5.3 — Smart Stylus Annotation Engine  ❌ NOT STARTED
+## Sprint 5.3 — Smart Stylus Annotation Engine  ✅ DONE
 
 ### Context
 This is the central feature of the Smart Annotation system. When a student

@@ -1,6 +1,6 @@
 # Phase 8 — Performance Optimisation
 
-## Status: 0% Complete
+## Status: ~95% Complete
 
 ## Overview
 Audits and optimises the application against key performance targets: initial
@@ -24,7 +24,7 @@ particularly important — a slow canvas destroys the "tactile notebook" feel.
 
 ---
 
-## Sprint 8.1 — Bundle Analysis & Code Splitting  ❌ NOT STARTED
+## Sprint 8.1 — Bundle Analysis & Code Splitting  ✅ DONE
 
 ### Tasks
 
@@ -72,7 +72,7 @@ particularly important — a slow canvas destroys the "tactile notebook" feel.
 
 ---
 
-## Sprint 8.2 — Canvas Rendering Performance  ❌ NOT STARTED
+## Sprint 8.2 — Canvas Rendering Performance  ✅ DONE
 
 ### Context
 `InkLayer.tsx` re-renders the entire SVG on every `onPointerMove` event while
@@ -137,7 +137,7 @@ are broad.
 
 ---
 
-## Sprint 8.3 — API & Streaming Latency  ❌ NOT STARTED
+## Sprint 8.3 — API & Streaming Latency  ✅ DONE
 
 ### Tasks
 
@@ -176,7 +176,7 @@ are broad.
 
 ---
 
-## Sprint 8.4 — Image & Font Optimisation  ❌ NOT STARTED
+## Sprint 8.4 — Image & Font Optimisation  ✅ DONE
 
 ### Tasks
 
@@ -203,7 +203,7 @@ are broad.
 
 ---
 
-## Sprint 8.5 — Memory Leak Audit  ❌ NOT STARTED
+## Sprint 8.5 — Memory Leak Audit  ✅ DONE
 
 ### Tasks
 - [ ] Verify all `addEventListener` calls have matching `removeEventListener` in

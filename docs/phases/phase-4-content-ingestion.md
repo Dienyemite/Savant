@@ -184,7 +184,7 @@ Each concept needs at least 1 lesson with a minimum of 3 slides. Priority order:
 
 ---
 
-## Sprint 4.4 — Text Block Spatial Index  ❌ NOT STARTED
+## Sprint 4.4 — Text Block Spatial Index  ✅ DONE
 
 ### Context
 `TextBlockRenderer.tsx` currently renders lesson text as plain React DOM with no

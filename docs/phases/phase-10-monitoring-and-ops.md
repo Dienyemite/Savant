@@ -1,6 +1,6 @@
 # Phase 10 — Monitoring & Operations
 
-## Status: 0% Complete
+## Status: ~100% Complete (external: Sentry account, budget alerts, uptime monitor still need provisioning)
 
 ## Overview
 Establishes observability for the production application: error tracking,
@@ -10,7 +10,7 @@ this phase, production issues are invisible until a user reports them.
 
 ---
 
-## Sprint 10.1 — Error Tracking  ❌ NOT STARTED
+## Sprint 10.1 — Error Tracking  ✅ DONE
 
 ### Tasks
 
@@ -68,7 +68,7 @@ this phase, production issues are invisible until a user reports them.
 
 ---
 
-## Sprint 10.2 — Performance Monitoring  ❌ NOT STARTED
+## Sprint 10.2 — Performance Monitoring  ✅ DONE
 
 ### Tasks
 
@@ -108,7 +108,7 @@ this phase, production issues are invisible until a user reports them.
 
 ---
 
-## Sprint 10.3 — LLM Cost Tracking  ❌ NOT STARTED
+## Sprint 10.3 — LLM Cost Tracking  ✅ DONE
 
 ### Context
 The Anthropic and Google AI APIs charge per token. Without usage tracking,
@@ -162,7 +162,7 @@ which is priced at ~$3/MTok input and ~$15/MTok output.
 
 ---
 
-## Sprint 10.4 — User Behaviour Analytics  ❌ NOT STARTED
+## Sprint 10.4 — User Behaviour Analytics  ✅ DONE
 
 ### Tasks
 
@@ -195,7 +195,7 @@ which is priced at ~$3/MTok input and ~$15/MTok output.
 
 ---
 
-## Sprint 10.5 — Alerting & On-Call Procedures  ❌ NOT STARTED
+## Sprint 10.5 — Alerting & On-Call Procedures  ✅ DONE
 
 ### Tasks
 

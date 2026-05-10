@@ -76,7 +76,7 @@ page with:
 
 ---
 
-## Sprint 2.3 — Supabase Auth Integration  ❌ NOT STARTED
+## Sprint 2.3 — Supabase Auth Integration  ✅ DONE
 
 ### Context
 `src/lib/supabase.ts` contains only a 3-line client stub. No sign-in, sign-up,

@@ -174,7 +174,7 @@ left: 50%` with 4 tools:
 
 ---
 
-## Sprint 1.7 — Zoom Threshold Transition  ❌ NOT STARTED
+## Sprint 1.7 — Zoom Threshold Transition  ✅ DONE
 
 ### Context
 The SavantOverview specification requires that zooming out past a defined threshold

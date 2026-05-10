@@ -1,6 +1,6 @@
 # Phase 6 — Auth & User Management
 
-## Status: ~5% Complete (client stub only)
+## Status: ~100% Complete
 
 ## Overview
 Adds real user identity, session persistence, and per-user data storage to
@@ -11,7 +11,7 @@ and adds RBAC foundations for future teacher/admin roles.
 
 ---
 
-## Sprint 6.1 — Supabase Auth Foundation  ❌ NOT STARTED
+## Sprint 6.1 — Supabase Auth Foundation  ✅ DONE
 
 ### Tasks
 
@@ -92,7 +92,7 @@ and adds RBAC foundations for future teacher/admin roles.
 
 ---
 
-## Sprint 6.2 — Progress Persistence  ❌ NOT STARTED
+## Sprint 6.2 — Progress Persistence  ✅ DONE
 
 ### Context
 `useGraphStore.updateProgress()` currently updates in-memory state only. On page
@@ -125,7 +125,7 @@ reload, all progress reverts to `DEFAULT_PROGRESS`.
 
 ---
 
-## Sprint 6.3 — Canvas State Persistence  ❌ NOT STARTED
+## Sprint 6.3 — Canvas State Persistence  ✅ DONE
 
 ### Context
 `supabase/migrations/002_canvas_states.sql` defines the `canvas_states` table
@@ -163,7 +163,7 @@ writes this table yet.
 
 ---
 
-## Sprint 6.4 — Annotation Persistence  ❌ NOT STARTED
+## Sprint 6.4 — Annotation Persistence  ✅ DONE
 
 ### Context
 Chat messages and marginalia entries live in `chat-store.ts` (in-memory only).
@@ -211,7 +211,7 @@ Neither the Socratic conversation history nor the marginalia are saved to the DB
 
 ---
 
-## Sprint 6.5 — RBAC Foundation  ❌ NOT STARTED
+## Sprint 6.5 — RBAC Foundation  ✅ DONE
 
 ### Context
 `user_role` ENUM is defined as `student | teacher | admin` in migration 001,

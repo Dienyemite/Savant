@@ -137,7 +137,7 @@ formula as InkLayer. If screen-space: document this explicitly as intentional.
 
 ---
 
-## Sprint 3.3 — Highlight Tool & Stroke Completion Hook  ❌ NOT STARTED
+## Sprint 3.3 — Highlight Tool & Stroke Completion Hook  ✅ DONE
 
 ### Context
 This sprint is the first half of the **Smart Annotation** pipeline. It adds a
