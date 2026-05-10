@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { TextBlock } from "@/types";
 import type { SpatialBlock } from "@/types";
@@ -63,7 +63,7 @@ interface Props {
 
 export default function TextBlockRenderer({ block, onSpatialUpdate }: Props) {
   const styleClass = STYLE_CLASSES[block.style ?? "body"] ?? "";
-  const segments = parseSegments(block.content);
+  const segments = useMemo(() => parseSegments(block.content), [block.content]);
 
   // One ref per segment — spacers are not tracked (null entries are skipped)
   const segmentRefs = useRef<(HTMLElement | null)[]>([]);

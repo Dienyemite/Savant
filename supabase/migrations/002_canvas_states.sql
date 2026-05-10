@@ -12,20 +12,25 @@
 -- concept_id is NULL for the global constellation
 -- canvas; set to a concept UUID for a lesson page.
 
+-- canvas_states is used ONLY for the global constellation canvas (concept_id = NULL).
+-- Per-lesson canvases are stored in lesson_canvas_states (see migration 003).
 CREATE TABLE canvas_states (
   id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  -- NULL = global constellation canvas
-  concept_id   UUID        REFERENCES concepts(id) ON DELETE SET NULL,
+  -- Always NULL for the global canvas; column kept for backwards-compat filtering.
+  -- No FK to concepts — the app uses local seed string IDs, not DB UUIDs.
+  concept_id   UUID,
   -- Serialised ink strokes: [{ id, points: [[x,y,p],...] }]
   strokes      JSONB       NOT NULL DEFAULT '[]'::jsonb,
   -- Serialised text notes: [{ id, x, y, content }]
   text_notes   JSONB       NOT NULL DEFAULT '[]'::jsonb,
   -- Last known viewport: { x, y, scale }
   viewport     JSONB       NOT NULL DEFAULT '{"x":0,"y":0,"scale":1}'::jsonb,
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, concept_id)
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- One global canvas row per user (concept_id is always NULL in this table).
+CREATE UNIQUE INDEX uq_canvas_states_user ON canvas_states (user_id);
 
 -- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_canvas_state_timestamp()

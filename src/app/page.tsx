@@ -25,9 +25,8 @@ const KnowledgeGraph = dynamic(
 export default function Home() {
   const isCoverOpen = useCanvasStore((s) => s.isCoverOpen);
   const hydrateCanvas = useCanvasStore((s) => s.hydrateCanvas);
-  const { applyUserPreferences, hydrateProgress } = useGraphStore(
-    (s) => ({ applyUserPreferences: s.applyUserPreferences, hydrateProgress: s.hydrateProgress })
-  );
+  const applyUserPreferences = useGraphStore((s) => s.applyUserPreferences);
+  const hydrateProgress = useGraphStore((s) => s.hydrateProgress);
   const { user } = useAuth();
 
   // Apply onboarding selections persisted to sessionStorage by /onboarding.

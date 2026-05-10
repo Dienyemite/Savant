@@ -122,7 +122,7 @@ export async function PUT(req: NextRequest) {
         viewport: body.viewport ?? { x: 0, y: 0, scale: 1 },
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "user_id,concept_id" }
+      { onConflict: "user_id" }
     );
 
     if (error) {
