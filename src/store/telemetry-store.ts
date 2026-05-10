@@ -1,5 +1,13 @@
 import { create } from "zustand";
 
+// Analytics helper — fire-and-forget, only runs in browser
+function analyticsTrack(event: string, props?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  import("@vercel/analytics").then(({ track }) => {
+    track(event, props as Record<string, string | number>);
+  }).catch(() => {/* analytics unavailable */});
+}
+
 // ============================================
 // Telemetry Store — "Slow Dopamine" Analytics
 // Tracks depth of thought: time-per-slide,
@@ -222,6 +230,11 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => ({
         currentSession: null,
         currentSlideEvent: null,
       };
+    });
+    // Track productive struggle funnel event
+    analyticsTrack("struggle_session", {
+      conceptId: get().completedSessions.at(-1)?.conceptId ?? "",
+      struggleScore: get().completedSessions.at(-1)?.productiveStruggleScore ?? 0,
     });
   },
 

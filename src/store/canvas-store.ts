@@ -128,6 +128,12 @@ interface CanvasStore {
   editNote: (id: string) => void;
   deleteNote: (id: string) => void;
 
+  // ── Sprint 1.7: Pre-lesson viewport (for back-navigation restore) ──
+  /** Saved viewport snapshot taken when a lesson activates. Restored on exit. */
+  preLessonViewport: { x: number; y: number; zoom: number } | null;
+  storePreLessonViewport: () => void;
+  clearPreLessonViewport: () => void;
+
   // ── Persistence (Sprint 6.3) ──
   /** Restores ink strokes and text notes loaded from Supabase on app init */
   hydrateCanvas: (strokes: InkStroke[], textNotes: GlobalTextNote[]) => void;
@@ -271,6 +277,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set((s) => ({
       textNotes: s.textNotes.filter((n) => n.id !== id),
     })),
+
+  // ── Sprint 1.7: Pre-lesson viewport ──
+  preLessonViewport: null,
+  storePreLessonViewport: () => set({ preLessonViewport: { ...get().viewport } }),
+  clearPreLessonViewport: () => set({ preLessonViewport: null }),
 
   hydrateCanvas: (inkStrokes, inkTextNotes) =>
     set({ strokes: inkStrokes, textNotes: inkTextNotes }),

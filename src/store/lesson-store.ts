@@ -4,6 +4,14 @@ import { rectIntersects } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
 
+// Analytics helper — fire-and-forget, only runs in browser
+function analyticsTrack(event: string, props?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  import("@vercel/analytics").then(({ track }) => {
+    track(event, props as Record<string, string | number>);
+  }).catch(() => {/* analytics unavailable */});
+}
+
 // ============================================
 // Lesson Engine Store
 // Tracks current lesson, slide position, student
@@ -170,6 +178,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
 
     // Start telemetry session
     useTelemetryStore.getState().startSession(lesson.id, conceptId);
+    // Track funnel event
+    analyticsTrack("lesson_started", { conceptId, lessonId: lesson.id });
     // Enter first slide
     if (sorted.length > 0) {
       useTelemetryStore.getState().enterSlide(sorted[0].id, sorted[0].type);
@@ -319,6 +329,13 @@ export const useLessonStore = create<LessonState>((set, get) => ({
 
   completeLesson: () => {
     useTelemetryStore.getState().completeSession();
+    const { activeLesson, activeLessonConceptId, currentSlideIndex, totalSlides, startedAt } = get();
+    analyticsTrack("lesson_completed", {
+      conceptId: activeLessonConceptId ?? "",
+      lessonId: activeLesson?.id ?? "",
+      slideCount: totalSlides,
+      durationMs: startedAt ? Date.now() - startedAt : 0,
+    });
     set({
       isLessonComplete: true,
       completedAt: Date.now(),

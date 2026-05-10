@@ -204,7 +204,9 @@ export default function LessonView() {
     setStrokeCommitHandler((stroke) => {
       if (stroke.tool !== "highlight") return;
       // Constellation-level highlight: no-op for now (lesson overlay covers InkLayer)
-      console.log("[SmartAnnotation] constellation highlight", stroke.id);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[SmartAnnotation] constellation highlight", stroke.id);
+      }
     });
     return () => clearStrokeCommitHandler();
   }, [isLessonActive, setStrokeCommitHandler, clearStrokeCommitHandler]);
@@ -234,19 +236,20 @@ export default function LessonView() {
     [queryByRect, addMarginaliaEntry, concept, currentSlideIndex, scheduleCanvasSave]
   );
 
-  if (!isLessonActive || !activeLesson) return null;
-
   const pageNumber = currentSlideIndex + 1;
   const domainLabel = concept ? DOMAIN_LABELS[concept.domain] : "";
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-50 bg-black notebook-ruled notebook-margin"
-    >
+    <AnimatePresence>
+      {isLessonActive && activeLesson ? (
+        <motion.div
+          key="lesson-view"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="fixed inset-0 z-50 bg-black notebook-ruled notebook-margin"
+        >
       {/* ── Page header ── */}
       <header
         className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-16 py-3 border-b border-white/[0.06]"
@@ -515,7 +518,9 @@ export default function LessonView() {
           }}
         />
       ))}
-    </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

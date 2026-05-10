@@ -1,5 +1,13 @@
 import { create } from "zustand";
 
+// Analytics helper — fire-and-forget, only runs in browser
+function analyticsTrack(event: string, props?: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  import("@vercel/analytics").then(({ track }) => {
+    track(event, props as Record<string, string | number>);
+  }).catch(() => {/* analytics unavailable */});
+}
+
 // ============================================
 // Chat Store — Manages Socratic Tutor state
 // Tracks messages, open/closed state, and
@@ -78,7 +86,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isStreaming: false,
   marginaliaEntries: [],
 
-  openChat: () => set({ isOpen: true, isMinimized: false }),
+  openChat: () => {
+    const conceptId = import("@/store/lesson-store").then(
+      ({ useLessonStore }) => useLessonStore.getState().activeLessonConceptId ?? ""
+    ).catch(() => "");
+    void conceptId.then((cid) => analyticsTrack("chat_opened", { trigger: "manual", conceptId: cid }));
+    set({ isOpen: true, isMinimized: false });
+  },
   closeChat: () => set({ isOpen: false }),
   toggleChat: () => {
     const { isOpen } = get();

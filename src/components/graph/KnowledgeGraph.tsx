@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useEffect, useRef } from "react";
+import { useCallback, useMemo, useEffect, useRef, type MutableRefObject } from "react";
 import {
   ReactFlow,
   Background,
@@ -18,7 +18,8 @@ import "@xyflow/react/dist/style.css";
 
 import ConceptGraphNode, { type ConceptNodeData } from "./ConceptNode";
 import { useGraphStore } from "@/store/graph-store";
-import { useCanvasStore } from "@/store/canvas-store";
+import { useCanvasStore, LESSON_ZOOM_THRESHOLD } from "@/store/canvas-store";
+import { useLessonStore } from "@/store/lesson-store";
 
 // Register custom node types
 const nodeTypes = {
@@ -39,7 +40,20 @@ export default function KnowledgeGraph() {
 
   const setViewport = useCanvasStore((s) => s.setViewport);
   const setRfContainerOrigin = useCanvasStore((s) => s.setRfContainerOrigin);
+  const storePreLessonViewport = useCanvasStore((s) => s.storePreLessonViewport);
+  const preLessonViewport = useCanvasStore((s) => s.preLessonViewport);
+  const clearPreLessonViewport = useCanvasStore((s) => s.clearPreLessonViewport);
+  const isLessonActive = useLessonStore((s) => s.isLessonActive);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  // RAF handle — throttles onMove so React state updates are capped at 1/frame
+  const rafRef = useRef<number>(0) as MutableRefObject<number>;
+  // Stores the ReactFlow instance so we can programmatically set the viewport
+  const rfInstanceRef = useRef<ReactFlowInstance<Node<ConceptNodeData>, Edge> | null>(null);
+  // Tracks which conceptId we already zoom-triggered to avoid re-triggering
+  const zoomTriggeredRef = useRef<string | null>(null);
+  // Tracks previous isLessonActive to detect the lesson->exit transition
+  const prevLessonActiveRef = useRef(false);
 
   // Clear mastery animations after they play
   useEffect(() => {
@@ -133,8 +147,21 @@ export default function KnowledgeGraph() {
     [progressMap, openLessonModal, selectConcept]
   );
 
+  // Restore viewport when lesson closes (Sprint 1.7 back-navigation)
+  useEffect(() => {
+    if (prevLessonActiveRef.current && !isLessonActive) {
+      // Lesson just deactivated — restore the saved viewport with a 400ms ease-in-out
+      if (preLessonViewport && rfInstanceRef.current) {
+        rfInstanceRef.current.setViewport(preLessonViewport, { duration: 400 });
+        clearPreLessonViewport();
+      }
+    }
+    prevLessonActiveRef.current = isLessonActive;
+  }, [isLessonActive, preLessonViewport, clearPreLessonViewport]);
+
   const handleInit = useCallback(
     (rf: ReactFlowInstance<Node<ConceptNodeData>, Edge>) => {
+      rfInstanceRef.current = rf;
       const vp = rf.getViewport();
       setViewport(vp.x, vp.y, vp.zoom);
     },
@@ -158,7 +185,47 @@ export default function KnowledgeGraph() {
         proOptions={{ hideAttribution: true }}
         className="bg-transparent"
         onInit={handleInit}
-        onMove={(_, vp) => setViewport(vp.x, vp.y, vp.zoom)}
+        onMove={(_, vp) => {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(() => {
+            setViewport(vp.x, vp.y, vp.zoom);
+
+            // Sprint 1.7: detect zoom crossing LESSON_ZOOM_THRESHOLD with a centred node
+            if (vp.zoom < LESSON_ZOOM_THRESHOLD) {
+              // Below threshold — reset trigger so next zoom-in can fire again
+              zoomTriggeredRef.current = null;
+              return;
+            }
+
+            // Find the concept node closest to the viewport centre
+            const el = containerRef.current;
+            if (!el) return;
+            const cx = (el.clientWidth / 2 - vp.x) / vp.zoom;
+            const cy = (el.clientHeight / 2 - vp.y) / vp.zoom;
+
+            let closestId: string | null = null;
+            let closestDist = Infinity;
+            for (const node of nodes) {
+              const dx = node.position.x - cx;
+              const dy = node.position.y - cy;
+              const dist = Math.hypot(dx, dy);
+              if (dist < closestDist) {
+                closestDist = dist;
+                closestId = node.id;
+              }
+            }
+
+            // Open lesson if a node is within 80 canvas-units of centre and not already triggered
+            if (closestId && closestDist < 80 && closestId !== zoomTriggeredRef.current) {
+              const status = progressMap.get(closestId);
+              if (status === "unlocked" || status === "mastered") {
+                zoomTriggeredRef.current = closestId;
+                storePreLessonViewport();
+                openLessonModal(closestId);
+              }
+            }
+          });
+        }}
       >
         {/* Ruled lines — horizontal notebook lines drawn across the constellation */}
         <Background

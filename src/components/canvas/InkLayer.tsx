@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import getStroke from "perfect-freehand";
 import { useCanvasStore } from "@/store/canvas-store";
 import { supabaseBrowser } from "@/lib/supabase";
@@ -60,22 +60,22 @@ function outlineToPath(outline: number[][]): string {
 // ─────────────────────────────────────────────
 
 export default function InkLayer() {
-  const {
-    activeTool,
-    strokes,
-    activePoints,
-    beginStroke,
-    extendStroke,
-    commitStroke,
-    eraseNear,
-    highlightStrokes,
-    activeHighlightPoints,
-    beginHighlight,
-    extendHighlight,
-    commitHighlight,
-    viewport,
-    rfContainerOrigin,
-  } = useCanvasStore();
+  // Granular selectors — each selector subscribes only to its own slice,
+  // preventing re-renders of the entire component on unrelated store changes.
+  const activeTool = useCanvasStore((s) => s.activeTool);
+  const strokes = useCanvasStore((s) => s.strokes);
+  const activePoints = useCanvasStore((s) => s.activePoints);
+  const beginStroke = useCanvasStore((s) => s.beginStroke);
+  const extendStroke = useCanvasStore((s) => s.extendStroke);
+  const commitStroke = useCanvasStore((s) => s.commitStroke);
+  const eraseNear = useCanvasStore((s) => s.eraseNear);
+  const highlightStrokes = useCanvasStore((s) => s.highlightStrokes);
+  const activeHighlightPoints = useCanvasStore((s) => s.activeHighlightPoints);
+  const beginHighlight = useCanvasStore((s) => s.beginHighlight);
+  const extendHighlight = useCanvasStore((s) => s.extendHighlight);
+  const commitHighlight = useCanvasStore((s) => s.commitHighlight);
+  const viewport = useCanvasStore((s) => s.viewport);
+  const rfContainerOrigin = useCanvasStore((s) => s.rfContainerOrigin);
 
   const isDrawing = useRef(false);
   const isPen = activeTool === "pen";
@@ -101,6 +101,27 @@ export default function InkLayer() {
 
   const { x: vx, y: vy, zoom: vz } = viewport;
   const { x: ox, y: oy } = rfContainerOrigin;
+
+  // Memoize committed stroke paths — only recomputes when strokes[] changes,
+  // NOT on every active-stroke pointer move event.
+  const committedInkPaths = useMemo(
+    () =>
+      strokes.map((stroke) => ({
+        id: stroke.id,
+        d: outlineToPath(getStroke(stroke.points, STROKE_OPTIONS)),
+      })),
+    [strokes]
+  );
+
+  const committedHighlightPaths = useMemo(
+    () =>
+      highlightStrokes.map((stroke) => ({
+        id: stroke.id,
+        d: outlineToPath(getStroke(stroke.points, HIGHLIGHT_OPTIONS)),
+        opacity: (stroke as { opacity?: number }).opacity ?? 0.22,
+      })),
+    [highlightStrokes]
+  );
 
   /** Convert a screen-space pointer position to canvas space. */
   const toCanvas = useCallback(
@@ -150,7 +171,21 @@ export default function InkLayer() {
   const onPointerUp = useCallback(() => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
-    if (isPen) { commitStroke(); scheduleSave(); }
+    if (isPen) {
+      if (process.env.NODE_ENV !== "production") {
+        performance.mark("stroke-start");
+        commitStroke();
+        performance.mark("stroke-end");
+        performance.measure("stroke-commit", "stroke-start", "stroke-end");
+        const entry = performance.getEntriesByName("stroke-commit").at(-1);
+        if (entry && entry.duration > 16) {
+          console.warn(`Slow stroke commit: ${entry.duration.toFixed(1)}ms`);
+        }
+      } else {
+        commitStroke();
+      }
+      scheduleSave();
+    }
     else if (isHighlight) { commitHighlight(); scheduleSave(); }
   }, [isPen, isHighlight, commitStroke, commitHighlight, scheduleSave]);
 
@@ -177,69 +212,69 @@ export default function InkLayer() {
         stay pinned to the paper when the user pans or zooms.
       */}
       <g transform={`translate(${ox + vx}, ${oy + vy}) scale(${vz})`}>
-        {/* ── Highlight strokes — rendered below ink at mix-blend-mode: screen ── */}
-        {highlightStrokes.map((stroke) => {
-          const outline = getStroke(stroke.points, HIGHLIGHT_OPTIONS);
-          const d = outlineToPath(outline);
-          if (!d) return null;
-          return (
-            <path
-              key={stroke.id}
-              d={d}
-              fill={`rgba(255,255,255,${stroke.opacity})`}
-              style={{ mixBlendMode: "screen" }}
-            />
-          );
-        })}
+        {/* ── Committed layer — static, only rerenders when strokes[] changes ── */}
+        <g id="committed">
+          {/* Committed highlight strokes */}
+          {committedHighlightPaths.map(({ id, d, opacity }) =>
+            d ? (
+              <path
+                key={id}
+                d={d}
+                fill={`rgba(255,255,255,${opacity})`}
+                style={{ mixBlendMode: "screen" }}
+              />
+            ) : null
+          )}
 
-        {/* Active highlight being drawn */}
-        {isHighlight && activeHighlightPoints.length > 1 && (() => {
-          const outline = getStroke(activeHighlightPoints, HIGHLIGHT_OPTIONS);
-          const d = outlineToPath(outline);
-          if (!d) return null;
-          return (
-            <path
-              d={d}
-              fill="rgba(255,255,255,0.22)"
-              style={{ mixBlendMode: "screen" }}
-            />
-          );
-        })()}
+          {/* Committed ink strokes */}
+          {committedInkPaths.map(({ id, d }) =>
+            d ? (
+              <path
+                key={id}
+                d={d}
+                fill="rgba(255,255,255,0.82)"
+                style={{
+                  filter:
+                    "drop-shadow(0 0 2px rgba(255,255,255,0.45)) drop-shadow(0 0 6px rgba(255,255,255,0.15))",
+                }}
+              />
+            ) : null
+          )}
+        </g>
 
-        {/* Committed ink strokes */}
-        {strokes.map((stroke) => {
-          const outline = getStroke(stroke.points, STROKE_OPTIONS);
-          const d = outlineToPath(outline);
-          if (!d) return null;
-          return (
-            <path
-              key={stroke.id}
-              d={d}
-              fill="rgba(255,255,255,0.82)"
-              style={{
-                filter:
-                  "drop-shadow(0 0 2px rgba(255,255,255,0.45)) drop-shadow(0 0 6px rgba(255,255,255,0.15))",
-              }}
-            />
-          );
-        })}
+        {/* ── Active layer — rerenders on every pointer move during drawing ── */}
+        <g id="active">
+          {/* Active highlight being drawn */}
+          {isHighlight && activeHighlightPoints.length > 1 && (() => {
+            const outline = getStroke(activeHighlightPoints, HIGHLIGHT_OPTIONS);
+            const d = outlineToPath(outline);
+            if (!d) return null;
+            return (
+              <path
+                d={d}
+                fill="rgba(255,255,255,0.22)"
+                style={{ mixBlendMode: "screen" }}
+              />
+            );
+          })()}
 
-        {/* Active stroke (currently being drawn) */}
-        {activePoints.length > 1 && (() => {
-          const outline = getStroke(activePoints, STROKE_OPTIONS);
-          const d = outlineToPath(outline);
-          if (!d) return null;
-          return (
-            <path
-              d={d}
-              fill="rgba(255,255,255,0.9)"
-              style={{
-                filter:
-                  "drop-shadow(0 0 3px rgba(255,255,255,0.6)) drop-shadow(0 0 8px rgba(255,255,255,0.2))",
-              }}
-            />
-          );
-        })()}
+          {/* Active stroke (currently being drawn) */}
+          {activePoints.length > 1 && (() => {
+            const outline = getStroke(activePoints, STROKE_OPTIONS);
+            const d = outlineToPath(outline);
+            if (!d) return null;
+            return (
+              <path
+                d={d}
+                fill="rgba(255,255,255,0.9)"
+                style={{
+                  filter:
+                    "drop-shadow(0 0 3px rgba(255,255,255,0.6)) drop-shadow(0 0 8px rgba(255,255,255,0.2))",
+                }}
+              />
+            );
+          })()}
+        </g>
       </g>
     </svg>
   );

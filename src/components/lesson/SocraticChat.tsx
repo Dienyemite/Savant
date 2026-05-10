@@ -114,12 +114,25 @@ export default function SocraticChat() {
     addMessage({ id: assistantId, role: "assistant", content: "" });
     setStreaming(true);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMessages, lessonContext: ctx }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
+
+      if (res.status === 429) {
+        useChatStore.getState().updateLastAssistant(
+          "I need a moment to think. Try again in a minute."
+        );
+        setStreaming(false);
+        return;
+      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -157,12 +170,13 @@ export default function SocraticChat() {
       if (accumulated) {
         useChatStore.getState().updateLastAssistant(accumulated);
       }
-    } catch {
-      useChatStore
-        .getState()
-        .updateLastAssistant(
-          "I couldn't connect. Check your internet and try again!"
-        );
+    } catch (err) {
+      clearTimeout(timeout);
+      const msg =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Savant is thinking slowly — try again."
+          : "I couldn't connect. Check your internet and try again!";
+      useChatStore.getState().updateLastAssistant(msg);
     } finally {
       setStreaming(false);
     }

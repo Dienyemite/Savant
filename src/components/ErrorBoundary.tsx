@@ -32,8 +32,16 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // In production this would be sent to an error monitoring service
-    console.error("[ErrorBoundary] Caught error:", error, info);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[ErrorBoundary] Caught error:", error, info);
+    }
+    // Report to Sentry when configured (dynamic import avoids a hard build dep)
+    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      const dynamicImport = new Function("m", "return import(m)") as (m: string) => Promise<{ captureException: (e: Error, ctx?: unknown) => void }>;
+      dynamicImport("@sentry/nextjs").then(({ captureException }) => {
+        captureException(error, { extra: { componentStack: info.componentStack } });
+      }).catch(() => {/* Sentry not installed — skip */});
+    }
   }
 
   handleReload = () => {

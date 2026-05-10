@@ -121,6 +121,9 @@ export default function SelectionTrigger({
     // Create a marginalia entry — streams the response in
     const entryId = addMarginaliaEntry(trigger.anchorY, trigger.selectedText);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -134,7 +137,9 @@ export default function SelectionTrigger({
           ],
           lessonContext: ctx,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok || !res.body) {
         updateMarginalia(entryId, "I couldn't reach the tutor right now. Try again?");
@@ -154,8 +159,13 @@ export default function SelectionTrigger({
       }
 
       if (accumulated) updateMarginalia(entryId, accumulated);
-    } catch {
-      updateMarginalia(entryId, "Connection error. Try again?");
+    } catch (err) {
+      clearTimeout(timeout);
+      const msg =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Savant is thinking slowly — try again."
+          : "Connection error. Try again?";
+      updateMarginalia(entryId, msg);
     } finally {
       finishMarginalia(entryId);
       isAskingRef.current = false;
