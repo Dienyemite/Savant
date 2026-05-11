@@ -78,7 +78,11 @@ export type LessonBlockType =
   | "drag_drop_match"
   | "formula_builder"
   | "multiple_choice"
-  | "visual_feedback";
+  | "visual_feedback"
+  | "analogy"
+  | "step_trace"
+  | "playground"
+  | "sketch";
 
 export interface LessonBlockBase {
   id: string;
@@ -133,13 +137,125 @@ export interface VisualFeedbackBlock extends LessonBlockBase {
   label: string;
 }
 
+// --- New interactive block types (Phase 5) ---
+
+/** Real-world hook callout — shown before formal definitions */
+export interface AnalogyBlock extends LessonBlockBase {
+  type: "analogy";
+  analogy_text: string;        // "Think of momentum like a shopping cart..."
+  real_world_example: string;  // supporting concrete example
+}
+
+/** Step-by-step derivation with prev/next/replay controls */
+export interface StepTraceBlock extends LessonBlockBase {
+  type: "step_trace";
+  title: string;
+  steps: {
+    id: string;
+    description: string;   // "Substitute known values"
+    expression: string;    // LaTeX or plain-text math
+    highlight?: string;    // which symbol/term changes at this step
+  }[];
+}
+
+/** Multi-parameter sandbox — sliders drive a named visualizer */
+export interface PlaygroundBlock extends LessonBlockBase {
+  type: "playground";
+  title: string;
+  parameters: {
+    id: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+    unit?: string;
+  }[];
+  /** Key into the visualizer registry, e.g. "projectile_motion" */
+  visualization: string;
+  output_label?: string;  // e.g. "Range (m)"
+}
+
+/** Named parameterized SVG or 3-D diagram */
+export interface SketchBlock extends LessonBlockBase {
+  type: "sketch";
+  /** Key into diagram registry, e.g. "parabola", "free_body" */
+  diagram_type: string;
+  parameters?: Record<string, number>;
+  caption?: string;
+}
+
 export type LessonBlock =
   | TextBlock
   | InteractiveSliderBlock
   | DragDropMatchBlock
   | FormulaBuilderBlock
   | MultipleChoiceBlock
-  | VisualFeedbackBlock;
+  | VisualFeedbackBlock
+  | AnalogyBlock
+  | StepTraceBlock
+  | PlaygroundBlock
+  | SketchBlock;
+
+/** A LessonBlock with absolute canvas coordinates assigned by the layout engine */
+export interface PositionedLessonBlock {
+  block: LessonBlock;
+  x: number;
+  y: number;
+  width: number;
+}
+
+// --- Notebook / Page models ---
+
+export type LearningMode = "self_taught" | "k12" | "college";
+
+export interface Notebook {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: string;
+  learning_mode: LearningMode;
+  emoji: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiagnosticResult {
+  level: "beginner" | "intermediate" | "advanced";
+  gaps: string[];
+}
+
+export interface CanvasAnnotation {
+  id: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  text: string;
+  created_at: string;
+}
+
+export interface PageCanvasState {
+  strokes: unknown[];          // perfect-freehand stroke data
+  textNotes: unknown[];        // TextNote objects from canvas-store
+  annotations: CanvasAnnotation[];
+}
+
+export interface Page {
+  id: string;
+  notebook_id: string;
+  user_id: string;
+  title: string;
+  topic: string;
+  order: number;
+  canvas_state: PageCanvasState;
+  lesson_content: PositionedLessonBlock[];
+  lesson_generated_at: string | null;
+  diagnostic_result: DiagnosticResult | null;
+  thumbnail_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // --- Graph UI Types ---
 
@@ -182,4 +298,15 @@ export interface SpatialBlock {
   paragraphIndex: number; // 0-based within the block
   text: string;           // raw text content of this paragraph
   rect: DOMRect;          // current screen-space bounding box
+}
+
+// --- Textbook RAG ---
+
+export interface TextbookChunk {
+  id: string;
+  content: string;
+  chapter: string | null;
+  section: string | null;
+  book_title: string;
+  similarity: number;
 }

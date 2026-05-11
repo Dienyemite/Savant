@@ -137,16 +137,31 @@ export default function OnboardingPage() {
     // On success AuthProvider fires; no further action needed
   };
 
-  const handleBegin = () => {
-    // Persist selections to sessionStorage so page.tsx can seed the graph.
-    const prefs = {
-      path: selectedPath ?? "self",
-      gradeLevel: selectedPath === "k12" ? grade : null,
-      major: selectedPath === "college" ? major.trim() : null,
-      subject: subject.trim() || null,
-    };
-    sessionStorage.setItem("savant_onboarding", JSON.stringify(prefs));
-    router.push("/");
+  const handleBegin = async () => {
+    const learning_mode =
+      selectedPath === "k12" ? "k12" :
+      selectedPath === "college" ? "college" :
+      "self_taught";
+
+    const declared_subject =
+      selectedPath === "college" ? major.trim() :
+      selectedPath === "self" ? subject.trim() :
+      null;
+
+    // Persist learning profile to the DB if signed in
+    if (user) {
+      await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          learning_mode,
+          declared_subject: declared_subject ?? undefined,
+          grade_level: selectedPath === "k12" ? grade : undefined,
+        }),
+      });
+    }
+
+    router.push("/dashboard");
   };
 
   return (

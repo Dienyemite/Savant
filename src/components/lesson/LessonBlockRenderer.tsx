@@ -7,6 +7,10 @@ import DragDropMatchRenderer from "./blocks/DragDropMatchRenderer";
 import FormulaBuilderRenderer from "./blocks/FormulaBuilderRenderer";
 import MultipleChoiceRenderer from "./blocks/MultipleChoiceRenderer";
 import VisualFeedbackRenderer from "./blocks/VisualFeedbackRenderer";
+import AnalogyBlockRenderer from "./blocks/AnalogyBlockRenderer";
+import StepTraceRenderer from "./blocks/StepTraceRenderer";
+import PlaygroundRenderer from "./blocks/PlaygroundRenderer";
+import SketchRenderer from "./blocks/SketchRenderer";
 
 // ============================================
 // Lesson Block Renderer (Parser)
@@ -34,6 +38,14 @@ export default function LessonBlockRenderer({ block, onSpatialUpdate }: Props) {
       return <MultipleChoiceRenderer block={block} />;
     case "visual_feedback":
       return <VisualFeedbackRenderer block={block} />;
+    case "analogy":
+      return <AnalogyBlockRenderer block={block} />;
+    case "step_trace":
+      return <StepTraceRenderer block={block} />;
+    case "playground":
+      return <PlaygroundRenderer block={block} />;
+    case "sketch":
+      return <SketchRenderer block={block} />;
     default:
       return null;
   }

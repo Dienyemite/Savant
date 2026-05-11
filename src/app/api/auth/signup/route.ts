@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "password must be at least 8 characters" }, { status: 400 });
   }
 
+  const { learning_mode, declared_subject, grade_level } = body as {
+    learning_mode?: string;
+    declared_subject?: string;
+    grade_level?: number;
+  };
+
   const { data, error } = await supabaseBrowser.auth.signUp({
     email,
     password,
@@ -48,6 +54,9 @@ export async function POST(req: NextRequest) {
           email: data.user.email!,
           display_name: display_name ?? email.split("@")[0],
           role: "student",
+          learning_mode: learning_mode ?? null,
+          declared_subject: declared_subject ?? null,
+          grade_level: grade_level ?? null,
         },
         { onConflict: "id" }
       );

@@ -45,7 +45,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protected pages: redirect to onboarding if no session
-  const isProtected = pathname.startsWith("/dashboard");
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/notebook");
   if (isProtected && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/onboarding";
