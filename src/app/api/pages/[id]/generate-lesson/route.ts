@@ -133,7 +133,7 @@ export async function POST(
       model: getModel(),
       system: systemPrompt,
       prompt: `Generate a complete interactive lesson about "${page.topic}" for a ${subject} student. Return only the JSON array.`,
-      maxTokens: 4096,
+      maxOutputTokens: 4096,
       temperature: 0.4,
     });
     rawText = result.text;

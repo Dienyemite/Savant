@@ -25,6 +25,11 @@ function blockTypeLabel(block: LessonBlock): string {
     case "multiple_choice": return "quiz";
     case "formula_builder": return "formula";
     case "visual_feedback": return "diagram";
+    case "analogy": return "analogy";
+    case "step_trace": return "steps";
+    case "playground": return "playground";
+    case "sketch": return "sketch";
+    default: return "lesson";
   }
 }
 

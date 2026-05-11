@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
+import { supabaseBrowser } from "@/lib/supabase";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function ResetPasswordPage() {
@@ -26,8 +26,7 @@ export default function ResetPasswordPage() {
     }
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error: err } = await supabase.auth.updateUser({ password });
+    const { error: err } = await supabaseBrowser.auth.updateUser({ password });
     setLoading(false);
     if (err) {
       setError(err.message);
