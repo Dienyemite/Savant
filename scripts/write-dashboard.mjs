@@ -1,4 +1,12 @@
-"use client";
+import { writeFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const content = `"use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -15,14 +23,14 @@ import type { Notebook, Page } from '@/types';
 // ─────────────────────────────────────────────
 
 const SUBJECT_EMOJIS: Record<string, string> = {
-  physics: '⛛️', calculus: '∫', math: '∑', biology: '🧬',
-  chemistry: '🧪', history: '📜', literature: '📖', computer: '💻',
-  music: '🎵', art: '🎨', economics: '📈', psychology: '🧠',
+  physics: '\u26db\ufe0f', calculus: '\u222b', math: '\u2211', biology: '\ud83e\uddec',
+  chemistry: '\ud83e\uddea', history: '\ud83d\udcdc', literature: '\ud83d\udcd6', computer: '\ud83d\udcbb',
+  music: '\ud83c\udfb5', art: '\ud83c\udfa8', economics: '\ud83d\udcc8', psychology: '\ud83e\udde0',
 };
 
 function subjectEmoji(subject: string): string {
   const key = Object.keys(SUBJECT_EMOJIS).find(k => subject.toLowerCase().includes(k));
-  return key ? SUBJECT_EMOJIS[key] : '📓';
+  return key ? SUBJECT_EMOJIS[key] : '\ud83d\udcd3';
 }
 
 function relativeTime(dateStr: string | null | undefined): string {
@@ -30,11 +38,11 @@ function relativeTime(dateStr: string | null | undefined): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return \`\${mins}m ago\`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return \`\${hours}h ago\`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return \`\${days}d ago\`;
 }
 
 // ─────────────────────────────────────────────
@@ -73,7 +81,7 @@ export default function FigmaDashboard() {
     if (nbs.length > 0) {
       const pageResults = await Promise.all(
         nbs.map(async (nb) => {
-          const r = await fetch(`/api/notebooks/${nb.id}/pages`);
+          const r = await fetch(\`/api/notebooks/\${nb.id}/pages\`);
           if (!r.ok) return [] as Page[];
           const pj = (await r.json()) as { pages: Page[] };
           return pj.pages ?? [];
@@ -87,7 +95,7 @@ export default function FigmaDashboard() {
   useEffect(() => { loadData(); }, [loadData]);
 
   useEffect(() => {
-    supabaseBrowser.auth.getUser().then(({ data }: { data: { user: { email?: string; user_metadata?: Record<string, unknown> } | null } }) => {
+    supabaseBrowser.auth.getUser().then(({ data }) => {
       if (data.user) {
         const email = data.user.email ?? '';
         const name = (data.user.user_metadata?.full_name as string | undefined) ?? email;
@@ -124,14 +132,14 @@ export default function FigmaDashboard() {
   const handleCreatePage = async () => {
     if (!newPageTitle.trim() || !targetNotebook) return;
     setCreatingPage(true);
-    const res = await fetch(`/api/notebooks/${targetNotebook.id}/pages`, {
+    const res = await fetch(\`/api/notebooks/\${targetNotebook.id}/pages\`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: newPageTitle.trim() }),
     });
     if (res.ok) {
       const json = (await res.json()) as { page: Page };
-      router.push(`/figma-canvas/${targetNotebook.id}/${json.page.id}`);
+      router.push(\`/figma-canvas/\${targetNotebook.id}/\${json.page.id}\`);
     }
     setCreatingPage(false);
   };
@@ -193,7 +201,7 @@ export default function FigmaDashboard() {
           <div className="bg-black border border-white/30 rounded-xl p-6 w-96 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">
-                New Page{targetNotebook ? ` in ${targetNotebook.title}` : ''}
+                New Page{targetNotebook ? \` in \${targetNotebook.title}\` : ''}
               </h2>
               <button onClick={() => setShowNewPage(false)} className="text-white/50 hover:text-white">
                 <X className="w-4 h-4" />
@@ -305,7 +313,7 @@ export default function FigmaDashboard() {
             <input type="text" placeholder="Search notebooks, pages, or tags..." value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full bg-black border border-white rounded-md pl-9 pr-12 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white transition-colors" />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/70 border border-white/50 rounded px-1.5 py-0.5">⌘K</div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-white/70 border border-white/50 rounded px-1.5 py-0.5">\u2318K</div>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => setShowNewNotebook(true)}
@@ -392,8 +400,8 @@ export default function FigmaDashboard() {
                     {recentPages.map(page => {
                       const nb = notebookForPage(page);
                       return <NoteListItem key={page.id} title={page.title}
-                        meta={`${nb?.title ?? ''} • Edited ${relativeTime(page.updated_at)}`}
-                        href={nb ? `/figma-canvas/${nb.id}/${page.id}` : '#'} />;
+                        meta={\`\${nb?.title ?? ''} \u2022 Edited \${relativeTime(page.updated_at)}\`}
+                        href={nb ? \`/figma-canvas/\${nb.id}/\${page.id}\` : '#'} />;
                     })}
                   </div>
                 )}
@@ -407,8 +415,8 @@ export default function FigmaDashboard() {
                     {allPages.filter(p => (p.lesson_content as unknown[] | null)?.length).slice(0, 4).map(page => {
                       const nb = notebookForPage(page);
                       return <FavoriteCard key={page.id} title={page.title}
-                        meta={`${nb?.title ?? ''} • Edited ${relativeTime(page.updated_at)}`}
-                        href={nb ? `/figma-canvas/${nb.id}/${page.id}` : '#'} />;
+                        meta={\`\${nb?.title ?? ''} \u2022 Edited \${relativeTime(page.updated_at)}\`}
+                        href={nb ? \`/figma-canvas/\${nb.id}/\${page.id}\` : '#'} />;
                     })}
                   </div>
                 )}
@@ -438,7 +446,7 @@ export default function FigmaDashboard() {
 function SidebarItem({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
   return (
     <button onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${active ? 'bg-white text-black font-medium' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
+      className={\`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors \${active ? 'bg-white text-black font-medium' : 'text-white/70 hover:text-white hover:bg-white/10'}\`}>
       {icon}<span>{label}</span>
     </button>
   );
@@ -447,13 +455,13 @@ function SidebarItem({ icon, label, active = false, onClick }: { icon: React.Rea
 function NotebookItem({ notebook, pages, active, onClick }: { notebook: Notebook; pages: number; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 transition-colors ${active ? 'bg-white/10' : ''}`}>
+      className={\`w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/10 transition-colors \${active ? 'bg-white/10' : ''}\`}>
       <div className="flex items-center gap-3">
         <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold border border-white text-white">
           {notebook.emoji ?? notebook.title[0]}
         </div>
         <div className="text-left">
-          <div className={`text-sm ${active ? 'text-white font-medium' : 'text-white'}`}>{notebook.title}</div>
+          <div className={\`text-sm \${active ? 'text-white font-medium' : 'text-white'}\`}>{notebook.title}</div>
           <div className="text-xs text-white/50">{pages} pages</div>
         </div>
       </div>
@@ -464,7 +472,7 @@ function NotebookItem({ notebook, pages, active, onClick }: { notebook: Notebook
 function Tab({ children, active = false, onClick }: { children: React.ReactNode; active?: boolean; onClick?: () => void }) {
   return (
     <button onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${active ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}`}>
+      className={\`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 \${active ? 'border-white text-white' : 'border-transparent text-white/70 hover:text-white'}\`}>
       {children}
     </button>
   );
@@ -473,12 +481,12 @@ function Tab({ children, active = false, onClick }: { children: React.ReactNode;
 function PageCard({ page, notebookTitle, notebookId }: { page: Page; notebookTitle: string; notebookId: string }) {
   const hasLesson = (page.lesson_content as unknown[] | null | undefined)?.length ?? 0;
   return (
-    <Link href={`/figma-canvas/${notebookId}/${page.id}`}
+    <Link href={\`/figma-canvas/\${notebookId}/\${page.id}\`}
       className="bg-black border border-white hover:bg-white/5 rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-colors">
       <div className="h-32 bg-black relative border-b border-white"
         style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)', backgroundSize: '16px 16px' }}>
         {hasLesson > 0 && (
-          <div className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 border border-white/50 rounded text-white/70">✓ Lesson</div>
+          <div className="absolute bottom-2 left-2 text-[10px] px-1.5 py-0.5 border border-white/50 rounded text-white/70">\u2713 Lesson</div>
         )}
       </div>
       <div className="p-3">
@@ -582,3 +590,8 @@ function ActivityItem({ target, action, notebookTitle, time, initials }: {
     </div>
   );
 }
+`;
+
+const outPath = resolve(__dirname, '../src/app/figma-dashboard/page.tsx');
+writeFileSync(outPath, content, 'utf8');
+console.log('Written:', outPath);
