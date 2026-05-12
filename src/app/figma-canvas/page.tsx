@@ -419,7 +419,7 @@ export default function FigmaCanvas() {
 }
 
 // Subcomponents
-function ToolIcon({ icon, label, active = false }: { icon: React.ReactElement; label: string; active?: boolean }) {
+function ToolIcon({ icon, label, active = false }: { icon: React.ReactElement<{ className?: string }>; label: string; active?: boolean }) {
   return (
     <button className="flex flex-col items-center gap-1.5 group w-full px-2">
       <div className={`p-2.5 rounded-xl border transition-colors ${active ? 'bg-white text-black border-white' : 'text-white/70 border-transparent group-hover:text-white group-hover:bg-white/10'}`}>
@@ -452,7 +452,7 @@ function PageItem({ number, title, active = false }: { number: string; title: st
 }
 
 function ToolbarBtn({ icon, active = false, onClick, highlight = false }: {
-  icon: React.ReactElement; active?: boolean; onClick?: () => void; highlight?: boolean;
+  icon: React.ReactElement<{ className?: string }>; active?: boolean; onClick?: () => void; highlight?: boolean;
 }) {
   return (
     <button 

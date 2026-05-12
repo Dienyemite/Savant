@@ -53,3 +53,65 @@ export async function GET(
   const { notebooks: notebook, ...page } = row;
   return NextResponse.json({ page, notebook });
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const cookieStore = await cookies();
+  const supabase = makeSupabase(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await req.json().catch(() => null) as {
+    title?: string;
+    is_pinned?: boolean;
+    is_favorited?: boolean;
+  } | null;
+  if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+
+  const allowed: Record<string, unknown> = {};
+  if (typeof body.title === "string")       allowed.title = body.title;
+  if (typeof body.is_pinned === "boolean")  allowed.is_pinned = body.is_pinned;
+  if (typeof body.is_favorited === "boolean") allowed.is_favorited = body.is_favorited;
+
+  if (Object.keys(allowed).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from("pages")
+    .update(allowed)
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ page: data as Page });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const cookieStore = await cookies();
+  const supabase = makeSupabase(cookieStore);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { error } = await supabase
+    .from("pages")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}

@@ -253,6 +253,8 @@ export interface Page {
   lesson_generated_at: string | null;
   diagnostic_result: DiagnosticResult | null;
   thumbnail_url: string | null;
+  is_pinned: boolean;
+  is_favorited: boolean;
   created_at: string;
   updated_at: string;
 }
