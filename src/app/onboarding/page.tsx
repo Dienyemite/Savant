@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { supabaseBrowser } from "@/lib/supabase";
 
 type Path = "self" | "k12" | "college" | null;
 
@@ -62,6 +63,8 @@ export default function OnboardingPage() {
   const [authDisplayName, setAuthDisplayName] = useState("");
   const [authError, setAuthError] = useState<{ field: string; message: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   // ── Path form state ──
   const [selectedPath, setSelectedPath] = useState<Path>(null);
@@ -133,8 +136,23 @@ export default function OnboardingPage() {
     setAuthLoading(false);
     if (json.error) {
       setAuthError({ field: "form", message: json.error });
+    } else {
+      router.push("/dashboard");
     }
-    // On success AuthProvider fires; no further action needed
+  };
+
+  const handleForgotPassword = async () => {
+    setAuthError(null);
+    if (!authEmail.includes("@")) {
+      setAuthError({ field: "email", message: "Enter your email address first." });
+      return;
+    }
+    setAuthLoading(true);
+    await supabaseBrowser.auth.resetPasswordForEmail(authEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    setAuthLoading(false);
+    setForgotSent(true);
   };
 
   const handleBegin = async () => {
@@ -224,7 +242,7 @@ export default function OnboardingPage() {
               {(["sign-up", "sign-in"] as const).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => { setAuthTab(tab); setAuthError(null); }}
+                  onClick={() => { setAuthTab(tab); setAuthError(null); setForgotMode(false); setForgotSent(false); }}
                   className={`flex-1 px-4 py-3 text-[10px] tracking-widest uppercase transition-colors text-left ${
                     authTab === tab
                       ? "text-white/60 border-b border-white/30 -mb-px"
@@ -334,19 +352,62 @@ export default function OnboardingPage() {
                 </p>
               )}
 
+              {/* Forgot password (sign-in tab only) */}
+              {authTab === "sign-in" && !forgotMode && (
+                <button
+                  type="button"
+                  onClick={() => { setForgotMode(true); setForgotSent(false); setAuthError(null); }}
+                  className="text-[10px] tracking-widest uppercase text-white/20 hover:text-white/40 transition-colors mt-1 block"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  Forgot password?
+                </button>
+              )}
+
+              {/* Forgot password form */}
+              {authTab === "sign-in" && forgotMode && (
+                <div className="mt-2 space-y-2">
+                  {forgotSent ? (
+                    <p className="text-[10px] text-white/40" style={{ fontFamily: "'Courier New', monospace" }}>
+                      ↳ Reset link sent — check your email.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={authLoading}
+                      className="text-[10px] tracking-[0.22em] uppercase text-white/45 hover:text-white/80 disabled:text-white/20 transition-colors flex items-center gap-1.5 border-b border-white/10 hover:border-white/30 pb-px"
+                      style={{ fontFamily: "'Courier New', monospace" }}
+                    >
+                      {authLoading ? "…" : "Send reset link →"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(false); setForgotSent(false); }}
+                    className="text-[10px] tracking-widest uppercase text-white/20 hover:text-white/40 transition-colors block"
+                    style={{ fontFamily: "'Courier New', monospace" }}
+                  >
+                    ← Back to sign in
+                  </button>
+                </div>
+              )}
+
               {/* Submit */}
-              <button
-                onClick={authTab === "sign-up" ? handleSignUp : handleSignIn}
-                disabled={authLoading}
-                className="text-[10px] tracking-[0.22em] uppercase text-white/45 hover:text-white/80 disabled:text-white/20 transition-colors flex items-center gap-1.5 border-b border-white/10 hover:border-white/30 pb-px mt-2"
-                style={{ fontFamily: "'Courier New', monospace" }}
-              >
-                {authLoading
-                  ? "…"
-                  : authTab === "sign-up"
-                  ? "Open new notebook →"
-                  : "Return to notebook →"}
-              </button>
+              {!forgotMode && (
+                <button
+                  onClick={authTab === "sign-up" ? handleSignUp : handleSignIn}
+                  disabled={authLoading}
+                  className="text-[10px] tracking-[0.22em] uppercase text-white/45 hover:text-white/80 disabled:text-white/20 transition-colors flex items-center gap-1.5 border-b border-white/10 hover:border-white/30 pb-px mt-2"
+                  style={{ fontFamily: "'Courier New', monospace" }}
+                >
+                  {authLoading
+                    ? "…"
+                    : authTab === "sign-up"
+                    ? "Open new notebook →"
+                    : "Return to notebook →"}
+                </button>
+              )}
             </div>
           </div>
         )}

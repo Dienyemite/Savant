@@ -34,13 +34,13 @@ export default function LandingPage() {
           <a href="#features" className="hover:text-white transition-colors">
             Features
           </a>
-          <a href="#notebooks" className="hover:text-white transition-colors">
+          <Link href="/dashboard" className="hover:text-white transition-colors">
             Pages
-          </a>
-          <button className="flex items-center gap-1 hover:text-white transition-colors">
+          </Link>
+          <Link href="/learn" className="flex items-center gap-1 hover:text-white transition-colors">
             <span>Learn</span>
             <ChevronDown className="w-4 h-4" />
-          </button>
+          </Link>
           <a href="#pricing" className="hover:text-white transition-colors">
             Pricing
           </a>
