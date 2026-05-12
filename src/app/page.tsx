@@ -41,6 +41,12 @@ export default function LandingPage() {
             <span>Learn</span>
             <ChevronDown className="w-4 h-4" />
           </Link>
+          <Link href="/figma-dashboard" className="hover:text-white transition-colors">
+            Dashboard
+          </Link>
+          <Link href="/figma-canvas" className="hover:text-white transition-colors">
+            Canvas
+          </Link>
           <a href="#pricing" className="hover:text-white transition-colors">
             Pricing
           </a>
