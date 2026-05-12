@@ -98,19 +98,30 @@ export default function OnboardingPage() {
       return;
     }
     setAuthLoading(true);
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: authEmail,
-        password: authPassword,
-        display_name: authDisplayName.trim() || undefined,
-      }),
+    const { data, error } = await supabaseBrowser.auth.signUp({
+      email: authEmail,
+      password: authPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        data: { display_name: authDisplayName.trim() || authEmail.split("@")[0] },
+      },
     });
-    const json: { error?: string } = await res.json();
+    if (!error && data.user) {
+      // Persist profile row (fire-and-forget, don't block navigation)
+      fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: authEmail,
+          password: authPassword,
+          display_name: authDisplayName.trim() || undefined,
+          _profile_only: true,
+        }),
+      }).catch(() => {});
+    }
     setAuthLoading(false);
-    if (json.error) {
-      setAuthError({ field: "form", message: json.error });
+    if (error) {
+      setAuthError({ field: "form", message: error.message });
     }
     // On success AuthProvider.onAuthStateChange fires; no further action needed here
   };
@@ -127,17 +138,15 @@ export default function OnboardingPage() {
       return;
     }
     setAuthLoading(true);
-    const res = await fetch("/api/auth/signin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: authEmail, password: authPassword }),
+    const { error } = await supabaseBrowser.auth.signInWithPassword({
+      email: authEmail,
+      password: authPassword,
     });
-    const json: { error?: string } = await res.json();
     setAuthLoading(false);
-    if (json.error) {
-      setAuthError({ field: "form", message: json.error });
+    if (error) {
+      setAuthError({ field: "form", message: error.message });
     } else {
-      router.push("/dashboard");
+      router.push("/figma-dashboard");
     }
   };
 
@@ -179,7 +188,7 @@ export default function OnboardingPage() {
       });
     }
 
-    router.push("/dashboard");
+    router.push("/figma-dashboard");
   };
 
   return (
