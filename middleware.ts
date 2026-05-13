@@ -44,15 +44,18 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
-  // Protected pages: redirect to onboarding if no session
+  // Protected pages: redirect to onboarding if no session.
+  // Note: /figma-canvas (exact) is the static demo and is public;
+  // only /figma-canvas/* (with a path after) requires auth.
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/notebook") ||
     pathname.startsWith("/figma-dashboard") ||
-    pathname.startsWith("/figma-canvas");
+    pathname.startsWith("/figma-canvas/");
   if (isProtected && !session) {
     const url = req.nextUrl.clone();
     url.pathname = "/onboarding";
+    url.searchParams.set("returnTo", pathname);
     return NextResponse.redirect(url);
   }
 

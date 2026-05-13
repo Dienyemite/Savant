@@ -10,7 +10,7 @@ import { cookies } from "next/headers";
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? "/figma-dashboard";
 
   if (code) {
     const cookieStore = await cookies();

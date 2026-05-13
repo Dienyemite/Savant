@@ -44,7 +44,7 @@ export default function LandingPage() {
           <Link href="/figma-dashboard" className="hover:text-white transition-colors">
             Dashboard
           </Link>
-          <Link href="/figma-canvas" className="hover:text-white transition-colors">
+          <Link href="/figma-dashboard" className="hover:text-white transition-colors">
             Canvas
           </Link>
           <a href="#pricing" className="hover:text-white transition-colors">
