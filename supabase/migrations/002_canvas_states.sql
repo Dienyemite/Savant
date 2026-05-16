@@ -14,7 +14,7 @@
 
 -- canvas_states is used ONLY for the global constellation canvas (concept_id = NULL).
 -- Per-lesson canvases are stored in lesson_canvas_states (see migration 003).
-CREATE TABLE canvas_states (
+CREATE TABLE IF NOT EXISTS canvas_states (
   id           UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   -- Always NULL for the global canvas; column kept for backwards-compat filtering.
@@ -30,7 +30,7 @@ CREATE TABLE canvas_states (
 );
 
 -- One global canvas row per user (concept_id is always NULL in this table).
-CREATE UNIQUE INDEX uq_canvas_states_user ON canvas_states (user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_canvas_states_user ON canvas_states (user_id);
 
 -- Update timestamp trigger
 CREATE OR REPLACE FUNCTION update_canvas_state_timestamp()
@@ -41,29 +41,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_canvas_states_updated_at
+CREATE OR REPLACE TRIGGER trg_canvas_states_updated_at
 BEFORE UPDATE ON canvas_states
 FOR EACH ROW EXECUTE FUNCTION update_canvas_state_timestamp();
 
 -- Indexes
-CREATE INDEX idx_canvas_states_user    ON canvas_states(user_id);
-CREATE INDEX idx_canvas_states_concept ON canvas_states(concept_id);
+CREATE INDEX IF NOT EXISTS idx_canvas_states_user    ON canvas_states(user_id);
+CREATE INDEX IF NOT EXISTS idx_canvas_states_concept ON canvas_states(concept_id);
 
 -- RLS
 ALTER TABLE canvas_states ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can read own canvas states" ON canvas_states;
 CREATE POLICY "Users can read own canvas states"
   ON canvas_states FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own canvas states" ON canvas_states;
 CREATE POLICY "Users can insert own canvas states"
   ON canvas_states FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own canvas states" ON canvas_states;
 CREATE POLICY "Users can update own canvas states"
   ON canvas_states FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own canvas states" ON canvas_states;
 CREATE POLICY "Users can delete own canvas states"
   ON canvas_states FOR DELETE
   USING (auth.uid() = user_id);

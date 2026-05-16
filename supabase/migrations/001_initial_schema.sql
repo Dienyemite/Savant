@@ -8,15 +8,26 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUM TYPES
 -- ============================================
 
-CREATE TYPE user_role AS ENUM ('student', 'teacher', 'admin');
-CREATE TYPE concept_domain AS ENUM ('math', 'science', 'art', 'music', 'language', 'logic');
-CREATE TYPE progress_status AS ENUM ('locked', 'unlocked', 'mastered');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('student', 'teacher', 'admin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE concept_domain AS ENUM ('math', 'science', 'art', 'music', 'language', 'logic');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE progress_status AS ENUM ('locked', 'unlocked', 'mastered');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================
 -- USERS
 -- ============================================
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
@@ -31,7 +42,7 @@ CREATE TABLE users (
 -- CONCEPTS (Knowledge Graph Nodes)
 -- ============================================
 
-CREATE TABLE concepts (
+CREATE TABLE IF NOT EXISTS concepts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -48,7 +59,7 @@ CREATE TABLE concepts (
 -- CONCEPT PREREQUISITES (Graph Edges)
 -- ============================================
 
-CREATE TABLE concept_prerequisites (
+CREATE TABLE IF NOT EXISTS concept_prerequisites (
   concept_id UUID NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
   prerequisite_id UUID NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
   PRIMARY KEY (concept_id, prerequisite_id),
@@ -60,7 +71,7 @@ CREATE TABLE concept_prerequisites (
 -- LESSONS
 -- ============================================
 
-CREATE TABLE lessons (
+CREATE TABLE IF NOT EXISTS lessons (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   concept_id UUID NOT NULL REFERENCES concepts(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -75,7 +86,7 @@ CREATE TABLE lessons (
 -- USER PROGRESS
 -- ============================================
 
-CREATE TABLE user_progress (
+CREATE TABLE IF NOT EXISTS user_progress (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   -- String concept ID matching the seed data (e.g. 'c-addition').
@@ -96,11 +107,11 @@ CREATE TABLE user_progress (
 -- INDEXES
 -- ============================================
 
-CREATE INDEX idx_concepts_domain ON concepts(domain);
-CREATE INDEX idx_lessons_concept ON lessons(concept_id);
-CREATE INDEX idx_progress_user ON user_progress(user_id);
-CREATE INDEX idx_progress_concept ON user_progress(concept_id);
-CREATE INDEX idx_progress_status ON user_progress(status);
+CREATE INDEX IF NOT EXISTS idx_concepts_domain ON concepts(domain);
+CREATE INDEX IF NOT EXISTS idx_lessons_concept ON lessons(concept_id);
+CREATE INDEX IF NOT EXISTS idx_progress_user ON user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_progress_concept ON user_progress(concept_id);
+CREATE INDEX IF NOT EXISTS idx_progress_status ON user_progress(status);
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -113,33 +124,41 @@ ALTER TABLE lessons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
 
 -- Public read access to concepts and lessons
+DROP POLICY IF EXISTS "Concepts are viewable by everyone" ON concepts;
 CREATE POLICY "Concepts are viewable by everyone"
   ON concepts FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Concept prerequisites are viewable by everyone" ON concept_prerequisites;
 CREATE POLICY "Concept prerequisites are viewable by everyone"
   ON concept_prerequisites FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Lessons are viewable by everyone" ON lessons;
 CREATE POLICY "Lessons are viewable by everyone"
   ON lessons FOR SELECT USING (true);
 
 -- Students can read/update their own progress
+DROP POLICY IF EXISTS "Users can view own progress" ON user_progress;
 CREATE POLICY "Users can view own progress"
   ON user_progress FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own progress" ON user_progress;
 CREATE POLICY "Users can insert own progress"
   ON user_progress FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own progress" ON user_progress;
 CREATE POLICY "Users can update own progress"
   ON user_progress FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Users can read own profile
+DROP POLICY IF EXISTS "Users can view own profile" ON users;
 CREATE POLICY "Users can view own profile"
   ON users FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
 CREATE POLICY "Users can update own profile"
   ON users FOR UPDATE
   USING (auth.uid() = id);

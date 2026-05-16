@@ -71,11 +71,12 @@ ALTER TABLE notebooks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
 
 -- Users can only CRUD their own notebooks
+DROP POLICY IF EXISTS "users_own_notebooks" ON notebooks;
 CREATE POLICY "users_own_notebooks" ON notebooks
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- Users can only CRUD their own pages
+DROP POLICY IF EXISTS "users_own_pages" ON pages;
 CREATE POLICY "users_own_pages" ON pages
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
@@ -92,10 +93,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER notebooks_updated_at
+CREATE OR REPLACE TRIGGER notebooks_updated_at
   BEFORE UPDATE ON notebooks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER pages_updated_at
+CREATE OR REPLACE TRIGGER pages_updated_at
   BEFORE UPDATE ON pages
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

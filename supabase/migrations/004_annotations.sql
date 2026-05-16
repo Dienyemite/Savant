@@ -1,7 +1,7 @@
 -- Migration 004: Annotation persistence (Phase 6 Sprint 6.4)
 -- Stores completed AI marginalia and highlight annotations per lesson
 
-CREATE TABLE annotations (
+CREATE TABLE IF NOT EXISTS annotations (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   concept_id       TEXT NOT NULL,          -- matches Concept.id from seed e.g. "c-addition"
@@ -14,10 +14,11 @@ CREATE TABLE annotations (
   created_at       TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_annotations_user_concept ON annotations(user_id, concept_id);
+CREATE INDEX IF NOT EXISTS idx_annotations_user_concept ON annotations(user_id, concept_id);
 
 ALTER TABLE annotations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "annotations_own" ON annotations;
 CREATE POLICY "annotations_own" ON annotations
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
