@@ -1,335 +1,371 @@
-"use client";
+﻿"use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PenTool, Keyboard, Eye, Layers, ChevronDown, CheckCircle2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// ════════════════════════════════════════════════════════════
-// Landing — Marketing entry point.
-// Black background, dot-grid, strict monochrome.
-// ════════════════════════════════════════════════════════════
+function CustomCursor() {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  useEffect(() => {
+    const updateMousePos = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+      const target = e.target as HTMLElement;
+      const isClickable =
+        target.tagName.toLowerCase() === "a" ||
+        target.tagName.toLowerCase() === "button" ||
+        !!target.closest("a") ||
+        !!target.closest("button") ||
+        !!target.closest('[role="button"]');
+      setIsHovering(isClickable);
+    };
+    window.addEventListener("mousemove", updateMousePos);
+    return () => window.removeEventListener("mousemove", updateMousePos);
+  }, []);
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 pointer-events-none z-[9999] mix-blend-difference flex items-center justify-center"
+      animate={{
+        x: mousePos.x - (isHovering ? 24 : 12),
+        y: mousePos.y - (isHovering ? 24 : 12),
+        width: isHovering ? 48 : 24,
+        height: isHovering ? 48 : 24,
+      }}
+      transition={{ type: "spring", stiffness: 800, damping: 35, mass: 0.2 }}
+    >
+      <motion.div
+        className="w-full h-full border border-white rounded-full"
+        animate={{ scale: isHovering ? 1.1 : 1 }}
+        transition={{ duration: 0.2 }}
+      />
+      <AnimatePresence>
+        {isHovering && (
+          <motion.div
+            className="absolute w-1 h-1 bg-white rounded-full"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function HeroAnimation() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      <motion.div
+        className="absolute w-[600px] h-[600px] border-[0.5px] border-white/20 rounded-full"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 120, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute top-0 left-1/2 w-2 h-2 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-[1px]" />
+      </motion.div>
+      <motion.div
+        className="absolute w-[800px] h-[800px] border-[0.5px] border-white/10 rounded-full border-dashed"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 180, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
+function CanvasAnimation() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      {[1, 2, 3].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute border-[0.5px] border-white/30 rounded-full"
+          initial={{ width: 100, height: 100, opacity: 1 }}
+          animate={{ width: [100, 1200], height: [100, 1200], opacity: [1, 0] }}
+          transition={{ duration: 10, repeat: Infinity, delay: i * 3.33, ease: "circOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PagesAnimation() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      <motion.div
+        className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full"
+        animate={{ x: [-100, 100, -100] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full"
+        animate={{ x: [100, -100, 100] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
+function BlocksAnimation() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      <motion.div
+        className="relative w-[600px] h-[600px] border-[0.5px] border-white/10 rounded-full flex items-center justify-center"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+      >
+        {[0, 90, 180, 270].map((deg, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-[200px] h-[200px] border-[0.5px] border-white/30 rounded-full origin-center"
+            style={{ transform: `rotate(${deg}deg) translateX(300px)` }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          />
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+function StylusAnimation() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      <div className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full" />
+      <motion.div
+        className="absolute w-[500px] h-[500px]"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute -top-1 left-1/2 w-2 h-2 bg-white rounded-full -translate-x-1/2 shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
+        <div className="absolute -top-1 left-1/2 w-[1px] h-32 bg-linear-to-b from-white to-transparent -translate-x-1/2" />
+      </motion.div>
+    </div>
+  );
+}
+
+const SECTIONS = {
+  hero: {
+    id: "hero",
+    title: "Think without limits.",
+    subtitle: "Organize ideas like a notebook",
+    description:
+      "Savant is the architectural canvas for learners. A space built for deep focus, structural intelligence, and visual cartography. Enter a realm where your thoughts command the architecture.",
+    Animation: HeroAnimation,
+  },
+  canvas: {
+    id: "canvas",
+    title: "Infinite Canvas",
+    subtitle: "Transcend physical boundaries",
+    description:
+      "The Infinite Notebook Canvas provides a boundless expanse where your thoughts can spread in all directions. It creates an ever-expanding cartography of your mind, free from the artificial constraints of traditional paper dimensions.",
+    Animation: CanvasAnimation,
+  },
+  pages: {
+    id: "pages",
+    title: "Notebook Pages",
+    subtitle: "Structured Freedom",
+    description:
+      "Choose the constraints that set your creativity free. Our Notebook-Style Pages offer dotted, ruled, or blank landscapes designed for perfect spatial harmony, bringing the familiar rhythm of physical journaling into the digital realm.",
+    Animation: PagesAnimation,
+  },
+  blocks: {
+    id: "blocks",
+    title: "Powerful Blocks",
+    subtitle: "Modular Intelligence",
+    description:
+      "Construct your knowledge architecture with interconnecting nodes. Move, resize, and link blocks of text, imagery, and complex equations to reflect how your brain naturally processes information and structural logic.",
+    Animation: BlocksAnimation,
+  },
+  stylus: {
+    id: "stylus",
+    title: "Built for Stylus",
+    subtitle: "Tactile Precision",
+    description:
+      "The Built for Stylus engine translates the visceral sensation of ink meeting paper into digital permanence. With imperceptible latency and algorithmic palm rejection, it captures the exact nuance of your handwritten thought.",
+    Animation: StylusAnimation,
+  },
+} as const;
+
+const BOOKMARKS = [
+  { id: "canvas", label: "Infinite Notebook Canvas" },
+  { id: "pages", label: "Notebook-Style Pages" },
+  { id: "blocks", label: "Powerful Note Blocks" },
+  { id: "stylus", label: "Built for Stylus" },
+] as const;
 
 export default function LandingPage() {
-  return (
-    <div className="flex flex-col min-h-screen relative overflow-hidden bg-black">
-      {/* Background dot pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-20"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)",
-          backgroundSize: "40px 40px",
-        }}
-      />
+  const [activeSection, setActiveSection] =
+    useState<keyof typeof SECTIONS>("hero");
+  const currentData = SECTIONS[activeSection];
+  const AnimationComponent = currentData.Animation;
 
-      {/* ── Header ── */}
-      <header className="flex items-center justify-between px-8 py-5 relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center text-black font-bold border border-white">
-            <span className="opacity-90 text-sm">IB</span>
+  return (
+    <div className="min-h-screen bg-black text-white cursor-none font-serif selection:bg-white/30 overflow-hidden flex flex-col relative select-none">
+      <CustomCursor />
+
+      {/* Header */}
+      <header className="px-16 py-12 flex items-center justify-between relative z-50 flex-shrink-0">
+        <div
+          className="flex items-center gap-6 group cursor-none"
+          role="button"
+          onClick={() => setActiveSection("hero")}
+        >
+          <div className="relative w-12 h-12 flex items-center justify-center">
+            <motion.div
+              className="absolute inset-0 border-[0.5px] border-white rounded-full"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            />
+            <span className="text-[10px] uppercase tracking-widest text-white">
+              IB
+            </span>
           </div>
-          <span className="text-xl font-medium tracking-tight text-white">Savant</span>
+          <span className="text-xl italic tracking-[0.2em] uppercase text-white font-light">
+            Savant
+          </span>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-white/70">
-          <a href="#features" className="hover:text-white transition-colors">
-            Features
-          </a>
-          <Link href="/dashboard" className="hover:text-white transition-colors">
-            Pages
-          </Link>
-          <Link href="/learn" className="flex items-center gap-1 hover:text-white transition-colors">
-            <span>Learn</span>
-            <ChevronDown className="w-4 h-4" />
-          </Link>
-          <Link href="/figma-dashboard" className="hover:text-white transition-colors">
+        <div className="flex items-center gap-12">
+          <Link
+            href="/figma-dashboard"
+            className="text-[10px] uppercase tracking-[0.3em] text-white/50 hover:text-white transition-colors cursor-none relative group"
+          >
             Dashboard
+            <div className="absolute -bottom-2 left-0 w-0 h-[1px] bg-white group-hover:w-full transition-all duration-500" />
           </Link>
-          <Link href="/figma-dashboard" className="hover:text-white transition-colors">
+          <Link
+            href="/figma-dashboard"
+            className="text-[10px] uppercase tracking-[0.3em] text-white/50 hover:text-white transition-colors cursor-none relative group"
+          >
             Canvas
+            <div className="absolute -bottom-2 left-0 w-0 h-[1px] bg-white group-hover:w-full transition-all duration-500" />
           </Link>
-          <a href="#pricing" className="hover:text-white transition-colors">
-            Pricing
-          </a>
-        </nav>
-
-        <div className="flex items-center gap-6 text-sm font-medium">
           <Link
             href="/onboarding"
-            className="text-white/70 hover:text-white transition-colors"
+            className="text-[10px] uppercase tracking-[0.3em] text-white/50 hover:text-white transition-colors cursor-none relative group"
           >
             Log in
+            <div className="absolute -bottom-2 left-0 w-0 h-[1px] bg-white group-hover:w-full transition-all duration-500" />
           </Link>
           <Link
             href="/onboarding"
-            className="bg-white hover:bg-gray-200 text-black px-5 py-2.5 rounded-md transition-colors border border-white"
+            className="text-[10px] uppercase tracking-[0.3em] border border-white px-8 py-3 hover:bg-white hover:text-black transition-colors cursor-none"
           >
-            Start free
+            Start Free
           </Link>
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-8 pt-16 pb-24 grid lg:grid-cols-2 gap-16 items-center relative z-10">
-        {/* Left column */}
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-6xl font-bold leading-[1.1] text-white tracking-tight">
-              Organize ideas
-              <br />
-              like a notebook.
-              <br />
-              <span className="text-white font-normal text-7xl inline-block -rotate-2 mt-2 italic">
-                Think without limits.
-              </span>
-            </h1>
-            <p className="text-white/70 text-lg max-w-md leading-relaxed">
-              Savant is the Miro-style canvas for learners.
-              <br />
-              Write with a stylus, type with ease, and connect
-              <br />
-              ideas across pages. Built for deep focus and
-              <br />
-              visual thinking.
-            </p>
-          </div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex items-center justify-center p-16 relative z-10">
+        <div className="relative w-full max-w-[1200px] h-[70vh] border-[0.5px] border-white/20 bg-black/40 backdrop-blur-sm flex">
+          {/* Subtle Grid Background */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.03] z-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)",
+              backgroundSize: "40px 40px",
+            }}
+          />
 
-          <div className="space-y-6 pt-4">
-            <FeatureRow
-              icon={<PenTool className="w-5 h-5 text-white" />}
-              title="Natural stylus writing"
-              desc="Smooth, low-latency ink on premium paper."
-            />
-            <FeatureRow
-              icon={<Keyboard className="w-5 h-5 text-white" />}
-              title="Typed notes & rich content"
-              desc="Text, equations, images, code, and more."
-            />
-            <FeatureRow
-              icon={<Eye className="w-5 h-5 text-white" />}
-              title="Visual learning"
-              desc="Diagrams, mind maps, and concept flows."
-            />
-            <FeatureRow
-              icon={<Layers className="w-5 h-5 text-white" />}
-              title="Page-based organization"
-              desc="Notebooks, sections, and infinite canvas."
-            />
-          </div>
-
-          <div className="flex items-center gap-4 pt-6">
-            <Link
-              href="/onboarding"
-              className="bg-white hover:bg-gray-200 text-black px-6 py-3 rounded-md transition-colors font-medium flex items-center gap-2 border border-white"
-            >
-              Start free
-              <span className="text-lg leading-none">→</span>
-            </Link>
-            <Link
-              href="/learn"
-              className="px-6 py-3 rounded-md font-medium text-white border border-white hover:bg-white/10 transition-colors flex items-center gap-2"
-            >
-              <span className="flex items-center justify-center w-5 h-5 rounded-full border border-white text-[10px]">
-                ▶
-              </span>
-              Try the app
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-white/70">
-            <CheckCircle2 className="w-4 h-4 text-white" />
-            <span>No credit card required • Free plan available</span>
-          </div>
-        </div>
-
-        {/* Right column — mockup window */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full -z-10" />
-          <div className="bg-black border border-white rounded-2xl shadow-2xl overflow-hidden aspect-4/3 flex flex-col relative">
-            {/* Window chrome */}
-            <div className="h-12 border-b border-white flex items-center px-4 justify-between bg-black">
-              <div className="flex items-center gap-2 text-xs text-white/70">
-                <div className="flex gap-1.5 mr-4">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                </div>
-                <span>Physics 201</span>
-                <span>/</span>
-                <span className="text-white">Mechanics</span>
-                <ChevronDown className="w-3 h-3" />
-              </div>
-              <div className="bg-white/10 border border-white rounded px-3 py-1 text-xs text-white">
-                Share
-              </div>
-            </div>
-
-            {/* Window body */}
-            <div
-              className="flex-1 relative bg-black"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)",
-                backgroundSize: "20px 20px",
-              }}
-            >
-              <div className="absolute top-8 left-8">
-                <h2 className="text-white text-4xl mb-4 italic">
-                  Projectile Motion
-                </h2>
-                <div className="text-white/70 text-xl leading-relaxed italic">
-                  Given:
-                  <br />
-                  <span className="text-sm">v₀ = initial velocity</span>
-                  <br />
-                  <span className="text-sm">θ = launch angle</span>
-                  <br />
-                  <span className="text-sm">g = 9.81 m/s²</span>
-                </div>
-              </div>
-
-              {/* Parabola sketch */}
-              <div className="absolute top-20 right-16 w-48 h-28 border-l border-b border-white">
-                <svg
-                  className="absolute inset-0 w-full h-full overflow-visible"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
+          {/* Bookmarks */}
+          <div className="absolute -right-[60px] top-12 flex flex-col gap-2 z-50">
+            {BOOKMARKS.map((bookmark) => {
+              const isActive = activeSection === bookmark.id;
+              return (
+                <div
+                  key={bookmark.id}
+                  role="button"
+                  onClick={() =>
+                    setActiveSection(isActive ? "hero" : bookmark.id)
+                  }
+                  className={`w-[60px] h-40 border-[0.5px] border-l-0 flex items-center justify-center cursor-none transition-all duration-500 ${
+                    isActive
+                      ? "bg-white border-white text-black -translate-x-[1px]"
+                      : "bg-black border-white/20 text-white/40 hover:bg-white/5 hover:border-white/40"
+                  }`}
                 >
-                  <path
-                    d="M 0 100 Q 50 -20 100 100"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    strokeDasharray="4,4"
-                  />
-                  <line x1="0" y1="100" x2="30" y2="40" stroke="white" strokeWidth="1.5" />
-                  <polygon points="30,40 28,45 32,44" fill="white" />
-                </svg>
-                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-white/60">
-                  Range (R)
+                  <span
+                    className="text-[9px] uppercase tracking-[0.3em] whitespace-nowrap rotate-180"
+                    style={{ writingMode: "vertical-rl" }}
+                  >
+                    {bookmark.label}
+                  </span>
                 </div>
-              </div>
+              );
+            })}
+          </div>
 
-              {/* Sticky note */}
-              <div className="absolute bottom-6 right-6 w-44 bg-black border border-white rounded-lg p-3 shadow-xl">
-                <h3 className="text-white text-lg mb-1.5 italic">Notes</h3>
-                <ul className="text-[11px] text-white/60 space-y-1.5 list-disc pl-3 italic">
-                  <li>Max height at v<sub>y</sub> = 0</li>
-                  <li>Path is a parabola</li>
-                  <li>Neglect air resistance</li>
-                </ul>
-              </div>
-            </div>
+          {/* Dynamic Content */}
+          <div className="relative w-full h-full overflow-hidden flex items-center justify-center p-24 z-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`anim-${activeSection}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+                className="absolute inset-0 z-0"
+              >
+                <AnimationComponent />
+              </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`text-${activeSection}`}
+                initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                className="relative z-10 w-full max-w-2xl text-center flex flex-col items-center"
+              >
+                <div className="text-[10px] uppercase tracking-[0.5em] text-white/40 mb-12 flex items-center gap-4">
+                  <div className="w-12 h-[1px] bg-white/20" />
+                  {currentData.subtitle}
+                  <div className="w-12 h-[1px] bg-white/20" />
+                </div>
+
+                <h1 className="text-6xl md:text-8xl italic font-light text-white mb-12 leading-[1.1] tracking-wide">
+                  {currentData.title}
+                </h1>
+
+                <p className="text-lg text-white/60 leading-relaxed font-light tracking-wide max-w-xl">
+                  {currentData.description}
+                </p>
+
+                {activeSection === "hero" && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1, duration: 1 }}
+                    className="mt-16"
+                  >
+                    <span className="text-[9px] uppercase tracking-[0.4em] text-white/30 italic">
+                      Select a bookmark to explore
+                    </span>
+                  </motion.div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </main>
 
-      {/* ── Feature grid ── */}
-      <section
-        id="features"
-        className="bg-black py-20 px-8 relative z-10 border-t border-white/20"
-      >
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-center text-2xl font-medium mb-12 text-white">
-            Everything you need to learn and create
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FeatureCard
-              title="Infinite Notebook Canvas"
-              desc="Think big. Drag, zoom, and connect ideas across infinite space."
-              visual={
-                <div className="flex items-center justify-center h-full text-white/40 text-6xl">
-                  ∞
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Notebook-Style Pages"
-              desc="Choose dotted, ruled, or blank pages. Organized like your favorite notebook."
-              visual={
-                <div className="flex gap-2 h-full items-center justify-center">
-                  <div className="w-12 h-16 border border-white rounded bg-black flex flex-col justify-evenly px-2">
-                    <div className="h-0.5 bg-white w-full" />
-                    <div className="h-0.5 bg-white w-full" />
-                    <div className="h-0.5 bg-white w-full" />
-                  </div>
-                  <div className="w-12 h-16 border border-white/40 rounded bg-black" />
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Knowledge Constellation"
-              desc="Visual concept map showing how ideas connect. Built for deep learning."
-              visual={
-                <div className="flex items-center justify-center h-full relative">
-                  <div className="w-3 h-3 rounded-full bg-white absolute top-4 left-8" />
-                  <div className="w-2 h-2 rounded-full bg-white/60 absolute top-8 right-8" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/80 absolute bottom-6 left-12" />
-                  <svg className="absolute inset-0 w-full h-full opacity-30" aria-hidden>
-                    <line x1="40" y1="20" x2="80%" y2="40%" stroke="white" strokeWidth="1" />
-                    <line x1="40" y1="20" x2="30%" y2="80%" stroke="white" strokeWidth="1" />
-                  </svg>
-                </div>
-              }
-            />
-            <FeatureCard
-              title="Socratic AI Tutor"
-              desc="Ask questions, get guided answers. Your AI study partner never just gives it away."
-              visual={
-                <div className="flex items-center justify-center h-full">
-                  <svg width="80" height="40" viewBox="0 0 80 40" fill="none" aria-hidden>
-                    <path
-                      d="M5 20 Q 25 5, 40 20 T 75 20"
-                      stroke="white"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                  </svg>
-                </div>
-              }
-            />
-          </div>
+      {/* Footer */}
+      <footer className="p-8 flex justify-between items-center relative z-10 text-[9px] uppercase tracking-[0.3em] text-white/30 border-t border-white/5">
+        <div>© 2026 Savant Architecture</div>
+        <div className="flex gap-8">
+          <span className="hover:text-white transition-colors cursor-none">
+            Privacy
+          </span>
+          <span className="hover:text-white transition-colors cursor-none">
+            Terms
+          </span>
         </div>
-      </section>
-    </div>
-  );
-}
-
-function FeatureRow({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="mt-1">{icon}</div>
-      <div>
-        <h3 className="text-white font-medium mb-0.5">{title}</h3>
-        <p className="text-white/50 text-sm">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({
-  title,
-  desc,
-  visual,
-}: {
-  title: string;
-  desc: string;
-  visual: React.ReactNode;
-}) {
-  return (
-    <div className="bg-black border border-white/20 rounded-xl p-6 flex flex-col hover:border-white/50 transition-colors">
-      <div className="h-32 mb-4 bg-black rounded-lg border border-white/20 overflow-hidden">
-        {visual}
-      </div>
-      <h3 className="text-white font-medium mb-2">{title}</h3>
-      <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+      </footer>
     </div>
   );
 }
