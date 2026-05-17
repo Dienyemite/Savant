@@ -74,15 +74,56 @@ function HeroAnimation() {
 }
 
 function CanvasAnimation() {
+  // Theme: boundless expansion — ripples + nested compass rings with orbital dots
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-      {[1, 2, 3].map((i) => (
+      {/* Outer compass ring with 8 tick marks */}
+      <motion.div
+        className="absolute w-[640px] h-[640px] rounded-full border-[0.5px] border-white/15"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 200, repeat: Infinity, ease: "linear" }}
+      >
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+          <div key={deg} className="absolute inset-0" style={{ transform: `rotate(${deg}deg)` }}>
+            <div className="absolute top-0 left-1/2 w-px h-4 bg-white/40 -translate-x-1/2" />
+          </div>
+        ))}
+      </motion.div>
+
+      {/* Mid ring with single glowing dot */}
+      <motion.div
+        className="absolute w-[420px] h-[420px] rounded-full border-[0.5px] border-white/30"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 100, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-white -translate-x-1/2 -translate-y-1/2 shadow-[0_0_10px_rgba(255,255,255,0.9)]" />
+      </motion.div>
+
+      {/* Inner ring with 2 opposing nodes */}
+      <motion.div
+        className="absolute w-[220px] h-[220px] rounded-full border-[0.5px] border-white/40"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+      >
+        <div className="absolute top-0 left-1/2 w-1.5 h-1.5 rounded-full bg-white/70 -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-1/2 w-1.5 h-1.5 rounded-full bg-white/70 -translate-x-1/2 translate-y-1/2" />
+      </motion.div>
+
+      {/* Innermost fast dashed ring */}
+      <motion.div
+        className="absolute w-[80px] h-[80px] rounded-full border-[0.5px] border-dashed border-white/50"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* Expanding ripple rings — the infinite canvas breathing */}
+      {[0, 2.5, 5].map((delay, i) => (
         <motion.div
           key={i}
-          className="absolute border-[0.5px] border-white/30 rounded-full"
-          initial={{ width: 100, height: 100, opacity: 1 }}
-          animate={{ width: [100, 1200], height: [100, 1200], opacity: [1, 0] }}
-          transition={{ duration: 10, repeat: Infinity, delay: i * 3.33, ease: "circOut" }}
+          className="absolute rounded-full border-[0.5px] border-white"
+          initial={{ width: 60, height: 60, opacity: 0.7 }}
+          animate={{ width: [60, 700], height: [60, 700], opacity: [0.7, 0] }}
+          transition={{ duration: 7.5, repeat: Infinity, delay, ease: "easeOut" }}
         />
       ))}
     </div>
@@ -90,56 +131,151 @@ function CanvasAnimation() {
 }
 
 function PagesAnimation() {
+  // Theme: stacked pages fanned open — rings offset on X like a book splayed flat
+  const pageRings = [
+    { x: -90, size: 500, opacity: 0.12, speed: 210, dir:  1 },
+    { x: -55, size: 490, opacity: 0.17, speed: 185, dir: -1 },
+    { x: -22, size: 480, opacity: 0.24, speed: 165, dir:  1 },
+    { x:   0, size: 468, opacity: 0.38, speed: 150, dir: -1 },
+    { x:  22, size: 480, opacity: 0.24, speed: 165, dir:  1 },
+    { x:  55, size: 490, opacity: 0.17, speed: 185, dir: -1 },
+    { x:  90, size: 500, opacity: 0.12, speed: 210, dir:  1 },
+  ];
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      {/* Ruled lines — notebook paper texture */}
+      <div className="absolute flex flex-col gap-9" style={{ opacity: 0.07 }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="w-[480px] h-px bg-white" />
+        ))}
+      </div>
+
+      {/* Vertical spine */}
+      <div className="absolute w-px h-full bg-white/5" />
+
+      {/* Fanned page rings */}
+      {pageRings.map((ring, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: ring.size,
+            height: ring.size,
+            x: ring.x,
+            border: `0.5px solid rgba(255,255,255,${ring.opacity})`,
+          }}
+          animate={{ rotate: ring.dir * 360 }}
+          transition={{ duration: ring.speed, repeat: Infinity, ease: "linear" }}
+        >
+          {i === 3 && (
+            <div className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_8px_rgba(255,255,255,0.6)]" />
+          )}
+        </motion.div>
+      ))}
+
+      {/* Central binding hub */}
       <motion.div
-        className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full"
-        animate={{ x: [-100, 100, -100] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute w-[96px] h-[96px] rounded-full border-[0.5px] border-dashed border-white/40"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
       />
-      <motion.div
-        className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full"
-        animate={{ x: [100, -100, 100] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <div className="absolute w-10 h-10 rounded-full border-[0.5px] border-white/30" />
     </div>
   );
 }
 
 function BlocksAnimation() {
+  // Theme: orrery — modular block-nodes orbiting a central hub at different speeds
+  const orbits: { r: number; nodes: number; isSquare: boolean; speed: number; dir: number; nw: number }[] = [
+    { r:  70, nodes: 1, isSquare: true,  speed: 18, dir:  1, nw: 7 },
+    { r: 145, nodes: 4, isSquare: false, speed: 38, dir: -1, nw: 5 },
+    { r: 230, nodes: 6, isSquare: false, speed: 62, dir:  1, nw: 4 },
+    { r: 315, nodes: 3, isSquare: true,  speed: 88, dir: -1, nw: 6 },
+  ];
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+      {/* Central hub — double concentric ring */}
+      <div className="absolute w-6 h-6 rounded-full border border-white/70 flex items-center justify-center z-10">
+        <div className="w-2 h-2 rounded-full bg-white/80" />
+      </div>
       <motion.div
-        className="relative w-[600px] h-[600px] border-[0.5px] border-white/10 rounded-full flex items-center justify-center"
+        className="absolute w-[34px] h-[34px] rounded-full border-[0.5px] border-dashed border-white/30"
         animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-      >
-        {[0, 90, 180, 270].map((deg, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-[200px] h-[200px] border-[0.5px] border-white/30 rounded-full origin-center"
-            style={{ transform: `rotate(${deg}deg) translateX(300px)` }}
-            animate={{ rotate: -360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          />
-        ))}
-      </motion.div>
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+      />
+
+      {orbits.map((orbit, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full border-[0.5px] border-white/10"
+          style={{ width: orbit.r * 2, height: orbit.r * 2 }}
+          animate={{ rotate: orbit.dir * 360 }}
+          transition={{ duration: orbit.speed, repeat: Infinity, ease: "linear" }}
+        >
+          {Array.from({ length: orbit.nodes }).map((_, j) => {
+            const angle = (360 / orbit.nodes) * j;
+            const rads = ((angle - 90) * Math.PI) / 180;
+            const x = Math.cos(rads) * orbit.r + orbit.r - orbit.nw / 2;
+            const y = Math.sin(rads) * orbit.r + orbit.r - orbit.nw / 2;
+            return (
+              <div
+                key={j}
+                className={`absolute border border-white/50 bg-black ${
+                  orbit.isSquare ? "rounded-[1px]" : "rounded-full"
+                }`}
+                style={{ width: orbit.nw, height: orbit.nw, left: x, top: y }}
+              />
+            );
+          })}
+        </motion.div>
+      ))}
     </div>
   );
 }
 
 function StylusAnimation() {
+  // Theme: precision drawing — glowing stylus tip traces a ring; inner rings breathe like pen pressure
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-      <div className="absolute w-[500px] h-[500px] border-[0.5px] border-white/20 rounded-full" />
+      {/* Outer boundary — the paper edge */}
+      <div className="absolute w-[520px] h-[520px] rounded-full border-[0.5px] border-white/[0.12]" />
+
+      {/* Slow dashed precision ring */}
       <motion.div
-        className="absolute w-[500px] h-[500px]"
+        className="absolute w-[400px] h-[400px] rounded-full border-[0.5px] border-dashed border-white/[0.18]"
+        animate={{ rotate: -360 }}
+        transition={{ duration: 130, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* Main tracing ring — stylus tip races around this */}
+      <motion.div
+        className="absolute w-[272px] h-[272px] rounded-full border-[0.5px] border-white/40"
         animate={{ rotate: 360 }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
       >
-        <div className="absolute -top-1 left-1/2 w-2 h-2 bg-white rounded-full -translate-x-1/2 shadow-[0_0_15px_rgba(255,255,255,0.8)]" />
-        <div className="absolute -top-1 left-1/2 w-[1px] h-32 bg-linear-to-b from-white to-transparent -translate-x-1/2" />
+        {/* Glowing stylus tip */}
+        <div className="absolute top-0 left-1/2 w-3 h-3 rounded-full bg-white -translate-x-1/2 -translate-y-1/2 shadow-[0_0_16px_rgba(255,255,255,1),0_0_32px_rgba(255,255,255,0.5)]" />
+        {/* Fading ink trail */}
+        <div className="absolute top-0 left-1/2 w-px h-20 bg-linear-to-b from-white/80 to-transparent -translate-x-1/2" />
       </motion.div>
+
+      {/* Pressure ring 1 — breathes slowly */}
+      <motion.div
+        className="absolute rounded-full border-[0.5px] border-white/[0.28]"
+        animate={{ width: [145, 188, 145], height: [145, 188, 145] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Pressure ring 2 — breathes offset */}
+      <motion.div
+        className="absolute rounded-full border-[0.5px] border-white/[0.22]"
+        animate={{ width: [80, 116, 80], height: [80, 116, 80] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+      />
+
+      {/* Center contact dot */}
+      <div className="absolute w-2 h-2 rounded-full bg-white/70" />
     </div>
   );
 }
