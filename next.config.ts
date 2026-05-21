@@ -13,10 +13,19 @@ const bundleAnalyzed = withBundleAnalyzer({
 export default withSentryConfig(bundleAnalyzed, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT ?? "savant",
-  // Silence the Sentry CLI output during builds
-  silent: !process.env.CI,
-  // Upload source maps for accurate stack traces
+
+  // Source map upload auth token
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Upload wider set of client source files for better stack trace resolution
   widenClientFileUpload: true,
+
+  // Proxy Sentry requests through Next.js to bypass ad-blockers
+  tunnelRoute: "/monitoring",
+
+  // Suppress non-CI build output
+  silent: !process.env.CI,
+
   // Disable the Sentry SDK telemetry
   telemetry: false,
 });

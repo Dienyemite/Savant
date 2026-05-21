@@ -73,6 +73,6 @@ export const config = {
      * - api/chat (AI chat — accessible without session per spec)
      * - auth/* (email confirmation)
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|api/auth|api/chat|auth/).*)",
+    "/((?!monitoring|_next/static|_next/image|favicon\\.ico|api/auth|api/chat|auth/).*)",
   ],
 };
