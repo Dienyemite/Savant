@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
 );
 
 /**
- * Embeds `topic` using OpenAI text-embedding-3-small, then queries
+ * Embeds `topic` using OpenAI text-embedding-3-large, then queries
  * match_textbook_chunks RPC for the top-k most relevant passages.
  */
 export async function retrieveChunks(
@@ -32,17 +32,21 @@ export async function retrieveChunks(
   }
 
   // Embed the topic query
-  const embeddingRes = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      input: `${subject}: ${topic}`,
-    }),
-  });
+  const embeddingRes = await fetch(
+    "https://api.openai.com/v1/embeddings",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-large",
+        input: `${subject}: ${topic}`,
+        dimensions: 768,
+      }),
+    }
+  );
 
   if (!embeddingRes.ok) {
     console.error("[textbook-retrieval] OpenAI embedding failed:", await embeddingRes.text());
@@ -52,7 +56,7 @@ export async function retrieveChunks(
   const embeddingJson = (await embeddingRes.json()) as {
     data: { embedding: number[] }[];
   };
-  const embedding = embeddingJson.data[0]?.embedding;
+  const embedding = embeddingJson.data?.[0]?.embedding;
   if (!embedding) return [];
 
   // Vector similarity search via Supabase RPC

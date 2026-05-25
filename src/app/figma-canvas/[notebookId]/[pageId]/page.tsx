@@ -43,6 +43,7 @@ export default function CanvasPage() {
   const [pageTitle, setPageTitle] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -139,14 +140,22 @@ export default function CanvasPage() {
 
   async function generateLesson() {
     setGenerating(true);
-    const res = await fetch(`/api/pages/${pageId}/generate-lesson`, { method: "POST" });
-    if (res.ok) {
-      const data = await res.json() as { lesson?: PositionedLessonBlock[] };
-      setPage((p) =>
-        p ? { ...p, lesson_content: data.lesson ?? [], lesson_generated_at: new Date().toISOString() } : p
-      );
+    setGenerateError(null);
+    try {
+      const res = await fetch(`/api/pages/${pageId}/generate-lesson`, { method: "POST" });
+      const data = await res.json() as { lesson_content?: PositionedLessonBlock[]; error?: string };
+      if (res.ok) {
+        setPage((p) =>
+          p ? { ...p, lesson_content: data.lesson_content ?? [], lesson_generated_at: new Date().toISOString() } : p
+        );
+      } else {
+        setGenerateError(data.error ?? `Error ${res.status}: Failed to generate lesson`);
+      }
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Network error");
+    } finally {
+      setGenerating(false);
     }
-    setGenerating(false);
   }
 
   async function addPage() {
@@ -330,6 +339,9 @@ export default function CanvasPage() {
                 <p className="text-xs text-white/50 mb-6">
                   {page?.topic ? `Topic: ${page.topic}` : "Add a topic and generate a lesson"}
                 </p>
+                {generateError && (
+                  <p className="text-red-400 text-xs mb-4 max-w-xs text-center">{generateError}</p>
+                )}
                 <button
                   onClick={generateLesson}
                   disabled={generating}

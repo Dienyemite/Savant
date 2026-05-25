@@ -25,11 +25,10 @@ import sys
 import time
 from pathlib import Path
 from typing import Generator
-
+import requests
 import tiktoken
 import pymupdf4llm
 from dotenv import load_dotenv
-from openai import OpenAI
 from supabase import create_client, Client
 
 # ─── Load environment from project root .env.local ─────────────────────────
@@ -42,15 +41,15 @@ SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 # ─── Constants ───────────────────────────────────────────────────────────────
-EMBED_MODEL = "text-embedding-3-small"   # must match textbook-retrieval.ts
-EMBED_DIMS = 1536                        # must match vector(1536) in schema
+EMBED_MODEL = "text-embedding-3-large"  # must match textbook-retrieval.ts
+EMBED_DIMS = 768                              # via dimensions param (MRL)
 TARGET_CHUNK_TOKENS = 400                # target size per chunk
 MAX_CHUNK_TOKENS = 500                   # hard cap before forced split
 CHUNK_OVERLAP_TOKENS = 50               # overlap between adjacent chunks
-EMBED_BATCH_SIZE = 100                  # OpenAI embeddings per API call
+EMBED_BATCH_SIZE = 100                  # items per OpenAI embeddings call
 SUPABASE_BATCH_SIZE = 50               # rows per Supabase insert
 
-TOKENIZER = tiktoken.encoding_for_model("text-embedding-3-small")
+TOKENIZER = tiktoken.get_encoding("cl100k_base")  # approximation for chunking
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -237,43 +236,62 @@ def build_savant_chunks(
 
 def embed_chunks_batched(
     chunks: list[dict],
-    openai_client: OpenAI,
 ) -> Generator[dict, None, None]:
     """
-    Sends chunks to OpenAI in batches of EMBED_BATCH_SIZE.
+    Sends chunks to OpenAI text-embedding-3-large in batches of EMBED_BATCH_SIZE.
     Yields each chunk dict with an "embedding" key added.
-    Includes exponential backoff on rate limit errors.
+    No inter-batch sleep needed — OpenAI allows 1M TPM / 3000 RPM.
     """
+    url = "https://api.openai.com/v1/embeddings"
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
     total = len(chunks)
     for batch_start in range(0, total, EMBED_BATCH_SIZE):
         batch = chunks[batch_start : batch_start + EMBED_BATCH_SIZE]
-        texts = [c["content"] for c in batch]
+
+        body = {
+            "model": EMBED_MODEL,
+            "input": [c["content"] for c in batch],
+            "dimensions": EMBED_DIMS,
+        }
 
         retries = 0
         while True:
             try:
-                response = openai_client.embeddings.create(
-                    model=EMBED_MODEL,
-                    input=texts,
-                )
+                resp = requests.post(url, headers=headers, json=body, timeout=120)
+                if resp.status_code == 429:
+                    header_wait = resp.headers.get("Retry-After")
+                    fallback = min(30 * (2 ** retries), 120)
+                    retry_after = int(header_wait) if header_wait else fallback
+                    retries += 1
+                    if retries > 4:
+                        raise RuntimeError(
+                            "OpenAI embedding rate limit persists after 4 retries — "
+                            "resume with --start-chunk."
+                        )
+                    print(f"  Rate limit — waiting {retry_after}s (retry {retries}/4)")
+                    time.sleep(retry_after)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
                 break
-            except Exception as e:
+            except requests.exceptions.HTTPError as e:
                 retries += 1
-                if retries > 5:
-                    raise RuntimeError(f"OpenAI embedding failed after 5 retries: {e}") from e
+                if retries > 4:
+                    raise RuntimeError(f"OpenAI embedding failed after 4 retries: {e}") from e
                 wait = 2 ** retries
-                print(f"  Rate limit / error — retrying in {wait}s ({e})")
+                print(f"  Error — retrying in {wait}s ({e})")
                 time.sleep(wait)
 
-        for i, embedding_obj in enumerate(response.data):
-            assert len(embedding_obj.embedding) == EMBED_DIMS, (
-                f"Expected {EMBED_DIMS} dims, got {len(embedding_obj.embedding)}"
-            )
-            yield {**batch[i], "embedding": embedding_obj.embedding}
+        # OpenAI returns results ordered by index; sort defensively
+        embeddings = sorted(data["data"], key=lambda x: x["index"])
+        for i, emb in enumerate(embeddings):
+            yield {**batch[i], "embedding": emb["embedding"]}
 
         done = min(batch_start + EMBED_BATCH_SIZE, total)
         print(f"  Embedded {done}/{total} chunks")
-
 
 # ─── Supabase insert ─────────────────────────────────────────────────────────
 
@@ -298,7 +316,7 @@ def insert_chunks(
                 "chapter": c["chapter"],
                 "section": c["section"],
                 "content": c["content"],
-                "embedding": c["embedding"],   # list[float], 1536 elements
+                "embedding": c["embedding"],   # list[float], 3072 elements
             }
             for c in batch
         ]
@@ -342,6 +360,12 @@ def main() -> None:
         default=None,
         help='Page range to process, e.g. "0-120" or "5,10,15" (0-indexed)',
     )
+    parser.add_argument(
+        "--start-chunk",
+        type=int,
+        default=0,
+        help="Skip the first N chunks (use to resume after a rate-limit crash)",
+    )
     args = parser.parse_args()
 
     pdf_path = Path(args.pdf).resolve()
@@ -358,10 +382,11 @@ def main() -> None:
     print(f"  Title:   {args.book_title}")
     if pages:
         print(f"  Pages:   {pages[0]}–{pages[-1]} ({len(pages)} pages)")
+    if args.start_chunk:
+        print(f"  Resume:  skipping first {args.start_chunk} chunks")
     print(f"{'='*60}\n")
 
     # ── Init clients ──────────────────────────────────────────────────────────
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
     # ── Step 1: Extract ───────────────────────────────────────────────────────
@@ -384,13 +409,23 @@ def main() -> None:
 
     # ── Step 4: Embed + Insert ────────────────────────────────────────────────
     print("Step 4/4 — Embedding and inserting into Supabase...")
-    embedded: list[dict] = []
-    for chunk_with_embedding in embed_chunks_batched(savant_chunks, openai_client):
-        embedded.append(chunk_with_embedding)
+    chunks_to_process = savant_chunks[args.start_chunk:]
+    if args.start_chunk:
+        print(f"  Resuming from chunk {args.start_chunk}/{len(savant_chunks)}")
 
-    insert_chunks(embedded, supabase)
+    inserted_total = 0
+    buffer: list[dict] = []
+    for chunk_with_embedding in embed_chunks_batched(chunks_to_process):
+        buffer.append(chunk_with_embedding)
+        if len(buffer) >= SUPABASE_BATCH_SIZE:
+            insert_chunks(buffer, supabase)
+            inserted_total += len(buffer)
+            buffer = []
+    if buffer:
+        insert_chunks(buffer, supabase)
+        inserted_total += len(buffer)
 
-    print(f"\n✓ Done — {len(embedded)} chunks ingested for subject '{args.subject}'")
+    print(f"\n\u2713 Done \u2014 {inserted_total} chunks ingested for subject '{args.subject}'")
     print(f"  The lesson generator will now use these chunks automatically.\n")
 
 
