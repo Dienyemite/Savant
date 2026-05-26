@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import type { StepTraceBlock } from "@/types";
+import { MathBlock, isLatex } from "@/lib/render-math";
 
 export default function StepTraceRenderer({ block }: { block: StepTraceBlock }) {
   const [current, setCurrent] = useState(0);
@@ -24,7 +25,24 @@ export default function StepTraceRenderer({ block }: { block: StepTraceBlock }) 
           backgroundSize: "16px 16px",
         }}
       >
-        <span className="text-xl font-mono text-white tracking-wide">{step.expression}</span>
+        {isLatex(step.expression) ? (
+          <MathBlock
+            tex={step.expression}
+            display={true}
+            className="text-white [&_.katex]:text-xl [&_.katex-display]:my-0"
+          />
+        ) : (
+          <span className="text-xl font-mono text-white tracking-wide">{step.expression}</span>
+        )}
+        {step.highlight && (
+          <div className="mt-3 px-3 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300/80 text-sm">
+            {isLatex(step.highlight) ? (
+              <MathBlock tex={step.highlight} display={false} />
+            ) : (
+              <span className="font-mono">{step.highlight}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Description */}

@@ -82,7 +82,11 @@ export type LessonBlockType =
   | "analogy"
   | "step_trace"
   | "playground"
-  | "sketch";
+  | "sketch"
+  | "timeline"
+  | "quote_analysis"
+  | "key_terms"
+  | "worked_example";
 
 export interface LessonBlockBase {
   id: string;
@@ -182,7 +186,78 @@ export interface SketchBlock extends LessonBlockBase {
   /** Key into diagram registry, e.g. "parabola", "free_body" */
   diagram_type: string;
   parameters?: Record<string, number>;
+  labels?: Record<string, string>;
   caption?: string;
+}
+
+// ─── Phase 13 — Subject-specific block types ────────────────────────────────
+
+/** Historical or conceptual timeline */
+export interface TimelineBlock extends LessonBlockBase {
+  type: "timeline";
+  title: string;
+  source_quote?: string;
+  events: {
+    id: string;
+    year: number;
+    title: string;
+    description: string;
+    category?: string;
+  }[];
+}
+
+/** Close-reading prompt with model analysis reveal (literature/philosophy) */
+export interface QuoteAnalysisBlock extends LessonBlockBase {
+  type: "quote_analysis";
+  source_quote: string;
+  attribution: string;
+  prompts: {
+    id: string;
+    question: string;
+    model_analysis: string;
+  }[];
+}
+
+/** Glossary / vocabulary flip-card grid */
+export interface KeyTermsBlock extends LessonBlockBase {
+  type: "key_terms";
+  title?: string;
+  terms: {
+    id: string;
+    term: string;
+    definition: string;
+    example_sentence?: string;
+  }[];
+}
+
+/** STEM worked example with progressive step reveal */
+export interface WorkedExampleBlock extends LessonBlockBase {
+  type: "worked_example";
+  title: string;
+  source_quote?: string;
+  given: string[];
+  find: string;
+  steps: {
+    id: string;
+    label: string;
+    expression: string;    // LaTeX or plain text
+    explanation: string;
+  }[];
+  check?: string;
+}
+
+// ─── Visualizer / Diagram prop types (Track C) ──────────────────────────────
+
+/** Props received by every visualizer component */
+export interface VisualizerProps {
+  params: Record<string, number>;
+  outputLabel?: string;
+}
+
+/** Props received by every diagram component */
+export interface DiagramProps {
+  params?: Record<string, number>;
+  labels?: Record<string, string>;
 }
 
 export type LessonBlock =
@@ -195,7 +270,11 @@ export type LessonBlock =
   | AnalogyBlock
   | StepTraceBlock
   | PlaygroundBlock
-  | SketchBlock;
+  | SketchBlock
+  | TimelineBlock
+  | QuoteAnalysisBlock
+  | KeyTermsBlock
+  | WorkedExampleBlock;
 
 /** A LessonBlock with absolute canvas coordinates assigned by the layout engine */
 export interface PositionedLessonBlock {

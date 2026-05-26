@@ -69,6 +69,10 @@ function assignSpatialLayout(blocks: LessonBlock[]): PositionedLessonBlock[] {
     drag_drop_match: 280,
     formula_builder: 260,
     visual_feedback: 240,
+    timeline: 280,
+    quote_analysis: 340,
+    key_terms: 260,
+    worked_example: 380,
   };
 
   for (const block of blocks) {
@@ -133,7 +137,7 @@ export async function POST(
       model: getModel(),
       system: systemPrompt,
       prompt: `Generate a complete interactive lesson about "${page.topic}" for a ${subject} student. Return only the JSON array.`,
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,
       temperature: 0.4,
     });
     rawText = result.text;

@@ -23,7 +23,7 @@ const supabaseAdmin = createClient(
 export async function retrieveChunks(
   topic: string,
   subject: string,
-  matchCount = 5
+  matchCount = 10
 ): Promise<TextbookChunk[]> {
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) {

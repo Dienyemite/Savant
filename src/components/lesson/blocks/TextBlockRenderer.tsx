@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { TextBlock } from "@/types";
 import type { SpatialBlock } from "@/types";
+import { MathBlock } from "@/lib/render-math";
 
 // ─────────────────────────────────────────────
 // Content parsing helpers
@@ -24,13 +25,41 @@ function parseSegments(content: string): Segment[] {
   });
 }
 
-// Parse inline markdown: **bold**, *italic*
-function parseInline(text: string): React.ReactNode[] {
+// Split text on display math ($$...$$) and inline math ($...$)
+type InlinePart =
+  | { kind: "text"; value: string }
+  | { kind: "math"; value: string; display: boolean };
+
+function splitMath(text: string): InlinePart[] {
+  const parts: InlinePart[] = [];
+  // Match $$...$$ (display) or $...$ (inline)
+  const regex = /\$\$(.+?)\$\$|\$(.+?)\$/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ kind: "text", value: text.slice(lastIndex, match.index) });
+    }
+    if (match[1] !== undefined) {
+      parts.push({ kind: "math", value: match[1], display: true });
+    } else if (match[2] !== undefined) {
+      parts.push({ kind: "math", value: match[2], display: false });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ kind: "text", value: text.slice(lastIndex) });
+  }
+  return parts.length > 0 ? parts : [{ kind: "text", value: text }];
+}
+
+// Parse inline markdown: **bold**, *italic* within a plain text segment
+function parseInlineMarkdown(text: string, baseKey: number): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
   let lastIndex = 0;
-  let match;
-  let key = 0;
+  let match: RegExpExecArray | null;
+  let key = baseKey;
 
   while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
@@ -43,6 +72,22 @@ function parseInline(text: string): React.ReactNode[] {
   }
   if (lastIndex < text.length) parts.push(text.slice(lastIndex));
   return parts.length > 0 ? parts : [text];
+}
+
+/** Parses a line of text that may contain $...$ or $$...$$ into React nodes. */
+function parseInline(text: string): React.ReactNode[] {
+  const mathParts = splitMath(text);
+  const result: React.ReactNode[] = [];
+  mathParts.forEach((part, i) => {
+    if (part.kind === "math") {
+      result.push(
+        <MathBlock key={i} tex={part.value} display={part.display} />
+      );
+    } else {
+      result.push(...parseInlineMarkdown(part.value, i * 100));
+    }
+  });
+  return result;
 }
 
 const STYLE_CLASSES: Record<string, string> = {

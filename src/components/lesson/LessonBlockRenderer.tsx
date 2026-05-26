@@ -11,6 +11,10 @@ import AnalogyBlockRenderer from "./blocks/AnalogyBlockRenderer";
 import StepTraceRenderer from "./blocks/StepTraceRenderer";
 import PlaygroundRenderer from "./blocks/PlaygroundRenderer";
 import SketchRenderer from "./blocks/SketchRenderer";
+import TimelineRenderer from "./blocks/TimelineRenderer";
+import QuoteAnalysisRenderer from "./blocks/QuoteAnalysisRenderer";
+import KeyTermsRenderer from "./blocks/KeyTermsRenderer";
+import WorkedExampleRenderer from "./blocks/WorkedExampleRenderer";
 
 // ============================================
 // Lesson Block Renderer (Parser)
@@ -46,6 +50,14 @@ export default function LessonBlockRenderer({ block, onSpatialUpdate }: Props) {
       return <PlaygroundRenderer block={block} />;
     case "sketch":
       return <SketchRenderer block={block} />;
+    case "timeline":
+      return <TimelineRenderer block={block} />;
+    case "quote_analysis":
+      return <QuoteAnalysisRenderer block={block} />;
+    case "key_terms":
+      return <KeyTermsRenderer block={block} />;
+    case "worked_example":
+      return <WorkedExampleRenderer block={block} />;
     default:
       return null;
   }
