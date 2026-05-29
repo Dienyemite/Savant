@@ -79,9 +79,39 @@ export async function POST(req: Request) {
   const body = (await req.json()) as ChatRequest;
   const { messages, contextType = "socratic", lessonContext, systemPrompt } = body;
 
-  if (!messages) {
+  // ── Input validation (spec-security §4.2) ─────────────────────────────
+  const sanitize = (s: string, max: number) =>
+    s.trim().replace(/\0/g, "").slice(0, max);
+
+  if (!messages || !Array.isArray(messages)) {
     return new Response(
       JSON.stringify({ error: "Missing messages" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  if (messages.length > 20) {
+    return new Response(
+      JSON.stringify({ error: "Too many messages" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+  if (!messages.every((m) => typeof m.content === "string" && m.content.length <= 2000)) {
+    return new Response(
+      JSON.stringify({ error: "Message content exceeds limit" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // Sanitize message content
+  const sanitizedMessages = messages.map((m) => ({
+    ...m,
+    content: sanitize(m.content as string, 2000),
+  }));
+
+  const validContextTypes: ContextType[] = ["socratic", "highlight_annotation"];
+  if (!validContextTypes.includes(contextType)) {
+    return new Response(
+      JSON.stringify({ error: "Invalid contextType" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -121,7 +151,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model,
     system: resolvedSystemPrompt,
-    messages,
+    messages: sanitizedMessages,
     maxOutputTokens: 300,
     temperature: 0.7,
   });

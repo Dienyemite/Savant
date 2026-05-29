@@ -78,6 +78,9 @@ export default function InkLayer() {
   const rfContainerOrigin = useCanvasStore((s) => s.rfContainerOrigin);
 
   const isDrawing = useRef(false);
+  // RAF throttle for onPointerMove — batches intermediate points to one frame (spec-performance §6)
+  const rafRef = useRef<number | null>(null);
+  const pendingMoveRef = useRef<{ cx: number; cy: number; p: number } | null>(null);
   const isPen = activeTool === "pen";
   const isEraser = activeTool === "eraser";
   const isHighlight = activeTool === "highlight";
@@ -157,20 +160,41 @@ export default function InkLayer() {
       if (!isDrawing.current || !isActive) return;
       const p = e.pressure > 0 ? e.pressure : 0.5;
       const { cx, cy } = toCanvas(e.clientX, e.clientY);
-      if (isPen) {
-        extendStroke(cx, cy, p);
-      } else if (isHighlight) {
-        extendHighlight(cx, cy, p);
-      } else {
+
+      if (isEraser) {
+        // Eraser is immediate — no RAF throttle (needs real-time feedback)
         eraseNear(cx, cy, 20 / vz);
+        return;
+      }
+
+      // Throttle pen/highlight to one update per animation frame
+      pendingMoveRef.current = { cx, cy, p };
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          const pending = pendingMoveRef.current;
+          if (!pending) return;
+          pendingMoveRef.current = null;
+          if (isPen) {
+            extendStroke(pending.cx, pending.cy, pending.p);
+          } else if (isHighlight) {
+            extendHighlight(pending.cx, pending.cy, pending.p);
+          }
+        });
       }
     },
-    [isActive, isPen, isHighlight, extendStroke, extendHighlight, eraseNear, toCanvas, vz]
+    [isActive, isPen, isEraser, isHighlight, extendStroke, extendHighlight, eraseNear, toCanvas, vz]
   );
 
   const onPointerUp = useCallback(() => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
+    // Cancel any pending RAF move so it doesn't fire after the stroke ends
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      pendingMoveRef.current = null;
+    }
     if (isPen) {
       if (process.env.NODE_ENV !== "production") {
         performance.mark("stroke-start");

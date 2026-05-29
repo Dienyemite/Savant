@@ -9,6 +9,15 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     globals: true,
     exclude: ["**/node_modules/**", "**/e2e/**"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 60,
+      },
+    },
   },
   resolve: {
     alias: {
