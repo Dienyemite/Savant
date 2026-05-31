@@ -61,7 +61,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
                   isCorrect
                     ? "bg-white/[0.04]"
                     : isWrong
-                    ? "bg-white/[0.02]"
+                    ? "bg-red-500/[0.08] border-l-2 border-red-500/40"
                     : isSelected
                     ? "bg-white/[0.03]"
                     : "hover:bg-white/[0.015]"
@@ -83,7 +83,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
                   isCorrect
                     ? "text-white/80"
                     : isWrong
-                    ? "text-white/40 line-through"
+                    ? "text-red-300/60 line-through"
                     : isSelected
                     ? "text-white/70"
                     : "text-white/45"
@@ -143,7 +143,7 @@ export default function MultipleChoiceRenderer({ block }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[11px] text-white/30 italic"
+              className="text-[11px] text-amber-400/70 italic"
             >
               Not quite — reflect and try again.
             </motion.p>

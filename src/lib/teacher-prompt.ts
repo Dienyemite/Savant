@@ -131,6 +131,22 @@ LESSON STRUCTURE (use this as a template, adapting for the subject):
 
 ---
 
+PLAYGROUND PARAM IDs — MANDATORY CONTRACT:
+Each "playground" block's parameters[].id values MUST exactly match the keys listed below for the chosen visualization. Using any other id will break the visualizer.
+
+| visualization       | required param ids (use EXACTLY these) |
+|---------------------|----------------------------------------|
+| projectile_motion   | "velocity", "angle"                   |
+| wave_superposition  | "amplitude", "frequency"              |
+| simple_harmonic_motion | "amplitude", "frequency"           |
+| free_fall           | "height"                               |
+| circular_motion     | "radius", "speed"                     |
+| function_plot       | "a", "b"                               |
+
+Example: a circular_motion playground block MUST use id "radius" and id "speed", regardless of the lesson topic (e.g. even for "Angular Momentum", do NOT use "omega", "mass", or "r" — use "radius" and "speed").
+
+---
+
 COMPLETE JSON SCHEMAS — return ONLY valid JSON, no prose, no markdown fences:
 
 [
