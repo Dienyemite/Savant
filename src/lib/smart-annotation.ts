@@ -10,8 +10,6 @@
 // margin note — insightful, not a summary".
 // ============================================
 
-import { useChatStore } from "@/store/chat-store";
-
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -58,12 +56,19 @@ Write your margin note now:`.trim();
  * POSTs to `/api/chat` with a highlight annotation context type,
  * streams the response chunk by chunk into the marginalia entry
  * identified by `id`, then marks it finished.
+ *
+ * `callbacks` is injected by the caller (LessonView) so this module
+ * stays free of direct store access.
  */
 export async function streamToMarginalia(
   id: string,
-  annotationPrompt: string
+  annotationPrompt: string,
+  callbacks: {
+    updateMarginalia: (id: string, content: string) => void;
+    finishMarginalia: (id: string) => void;
+  }
 ): Promise<void> {
-  const { updateMarginalia, finishMarginalia } = useChatStore.getState();
+  const { updateMarginalia, finishMarginalia } = callbacks;
 
   let accumulated = "";
 

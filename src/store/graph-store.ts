@@ -7,7 +7,6 @@ import {
   ProgressStatus,
 } from "@/types";
 import { CONCEPTS, PREREQUISITES, LESSONS, DEFAULT_PROGRESS } from "@/data/seed";
-import { supabaseBrowser } from "@/lib/supabase";
 
 // ============================================
 // Knowledge Graph Store
@@ -57,6 +56,14 @@ interface GraphState {
     major: string | null;
     subject: string | null;
   }) => void;
+  /**
+   * Persistence adapter — called after every progress update.
+   * Injected by learn/page.tsx so the store stays free of network concerns.
+   * Mirrors the onStrokeCommit pattern in canvas-store.
+   */
+  onProgressPersist?: (conceptId: string, status: ProgressStatus) => void;
+  setProgressPersistHandler: (fn: (conceptId: string, status: ProgressStatus) => void) => void;
+  clearProgressPersistHandler: () => void;
 }
 
 // Build initial progress map from seed data
@@ -173,15 +180,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       };
     });
 
-    // Fire-and-forget: persist to DB when user is authenticated
-    supabaseBrowser.auth.getSession().then(({ data }: { data: { session: import('@supabase/supabase-js').Session | null } }) => {
-      if (!data.session) return;
-      fetch("/api/progress", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conceptId, status }),
-      }).catch(() => {/* silent — non-blocking */});
-    });
+    // Delegate persistence to the injected adapter (registered by learn/page.tsx)
+    get().onProgressPersist?.(conceptId, status);
   },
 
   clearMasteryAnimation: () =>
@@ -239,4 +239,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
     set({ progressMap: newMap });
   },
+
+  onProgressPersist: undefined,
+  setProgressPersistHandler: (fn) => set({ onProgressPersist: fn }),
+  clearProgressPersistHandler: () => set({ onProgressPersist: undefined }),
 }));

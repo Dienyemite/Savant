@@ -7,12 +7,16 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { useLessonStore } from "@/store/lesson-store";
-import { LESSONS } from "@/data/seed";
+import { LESSONS, CONCEPTS } from "@/data/seed";
+
+const findConcept = (id: string) => CONCEPTS.find((c) => c.id === id) ?? CONCEPTS[0];
 
 function resetStore() {
   useLessonStore.setState({
     activeLesson: null,
     activeLessonConceptId: null,
+    activeLessonConceptTitle: null,
+    activeLessonConceptDomain: null,
     currentSlideIndex: 0,
     isLessonActive: false,
     isLessonComplete: false,
@@ -29,14 +33,14 @@ describe("lesson-store — lifecycle", () => {
   beforeEach(resetStore);
 
   it("startLesson sets isLessonActive: true and currentSlideIndex: 0", () => {
-    useLessonStore.getState().startLesson(FIRST_LESSON, FIRST_LESSON.concept_id);
+    useLessonStore.getState().startLesson(FIRST_LESSON, findConcept(FIRST_LESSON.concept_id));
     const { isLessonActive, currentSlideIndex } = useLessonStore.getState();
     expect(isLessonActive).toBe(true);
     expect(currentSlideIndex).toBe(0);
   });
 
   it("exitLesson resets lesson state", () => {
-    useLessonStore.getState().startLesson(FIRST_LESSON, FIRST_LESSON.concept_id);
+    useLessonStore.getState().startLesson(FIRST_LESSON, findConcept(FIRST_LESSON.concept_id));
     useLessonStore.getState().exitLesson();
     const { isLessonActive, activeLesson } = useLessonStore.getState();
     expect(isLessonActive).toBe(false);
@@ -44,7 +48,7 @@ describe("lesson-store — lifecycle", () => {
   });
 
   it("completeLesson sets isLessonComplete: true", () => {
-    useLessonStore.getState().startLesson(FIRST_LESSON, FIRST_LESSON.concept_id);
+    useLessonStore.getState().startLesson(FIRST_LESSON, findConcept(FIRST_LESSON.concept_id));
     useLessonStore.getState().completeLesson();
     expect(useLessonStore.getState().isLessonComplete).toBe(true);
   });
@@ -58,7 +62,7 @@ describe("lesson-store — canAdvance", () => {
       (l) => [...l.content_schema].sort((a, b) => a.order - b.order)[0]?.type === "text"
     );
     if (textLesson) {
-      useLessonStore.getState().startLesson(textLesson, textLesson.concept_id);
+      useLessonStore.getState().startLesson(textLesson, findConcept(textLesson.concept_id));
     }
   });
 
@@ -76,7 +80,7 @@ describe("lesson-store — nextSlide / prevSlide", () => {
     resetStore();
     const multiSlideLesson = LESSONS.find((l) => l.content_schema.length > 1);
     if (multiSlideLesson) {
-      useLessonStore.getState().startLesson(multiSlideLesson, multiSlideLesson.concept_id);
+      useLessonStore.getState().startLesson(multiSlideLesson, findConcept(multiSlideLesson.concept_id));
     }
   });
 

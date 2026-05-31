@@ -27,6 +27,8 @@ export default function Home() {
   const hydrateCanvas = useCanvasStore((s) => s.hydrateCanvas);
   const applyUserPreferences = useGraphStore((s) => s.applyUserPreferences);
   const hydrateProgress = useGraphStore((s) => s.hydrateProgress);
+  const setProgressPersistHandler = useGraphStore((s) => s.setProgressPersistHandler);
+  const clearProgressPersistHandler = useGraphStore((s) => s.clearProgressPersistHandler);
   const { user } = useAuth();
 
   // Apply onboarding selections persisted to sessionStorage by /onboarding.
@@ -57,6 +59,23 @@ export default function Home() {
       })
       .catch(() => {/* silent — seed defaults remain active */});
   }, [user, hydrateProgress]);
+
+  // Register the progress persistence adapter — injected here so graph-store
+  // stays free of network and auth concerns (Ports & Adapters).
+  useEffect(() => {
+    if (!user) {
+      clearProgressPersistHandler();
+      return;
+    }
+    setProgressPersistHandler((conceptId, status) => {
+      fetch("/api/progress", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conceptId, status }),
+      }).catch(() => {/* silent — non-blocking */});
+    });
+    return () => clearProgressPersistHandler();
+  }, [user, setProgressPersistHandler, clearProgressPersistHandler]);
 
   // Load persisted global canvas state from Supabase when user is authenticated
   useEffect(() => {

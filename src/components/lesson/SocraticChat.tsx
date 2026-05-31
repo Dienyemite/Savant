@@ -4,9 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore, nextId } from "@/store/chat-store";
 import { useLessonStore } from "@/store/lesson-store";
-import { useGraphStore } from "@/store/graph-store";
-import { DOMAIN_COLORS, DOMAIN_LABELS } from "@/types";
-import type { LessonContext } from "@/lib/socratic-prompt";
+import { DOMAIN_COLORS } from "@/types";
 import {
   X,
   Minus,
@@ -22,41 +20,6 @@ import {
 // Uses streaming via the Vercel AI SDK.
 // ============================================
 
-function buildLessonContext(): LessonContext | null {
-  const lessonState = useLessonStore.getState();
-  const graphState = useGraphStore.getState();
-
-  const { activeLesson, activeLessonConceptId, currentSlideIndex, totalSlides, getProgress, getCurrentBlock, getBlockAnswer } = lessonState;
-  if (!activeLesson || !activeLessonConceptId) return null;
-
-  const concept = graphState.concepts.find(
-    (c) => c.id === activeLessonConceptId
-  );
-  if (!concept) return null;
-
-  const block = getCurrentBlock();
-  if (!block) return null;
-
-  const answer = getBlockAnswer(block.id);
-
-  // Strip the block into a clean object (remove id, order for LLM context)
-  const { id: _id, order: _order, ...blockContent } = block;
-
-  return {
-    lessonTitle: activeLesson.title,
-    lessonDescription: activeLesson.description ?? "",
-    conceptTitle: concept.title,
-    conceptDomain: DOMAIN_LABELS[concept.domain],
-    currentBlockType: block.type,
-    currentBlockContent: blockContent as Record<string, unknown>,
-    studentAnswer: answer.value,
-    attemptCount: answer.attempts,
-    slideIndex: currentSlideIndex,
-    totalSlides,
-    lessonProgress: getProgress(),
-  };
-}
-
 export default function SocraticChat() {
   const {
     isOpen,
@@ -71,14 +34,12 @@ export default function SocraticChat() {
     setStreaming,
   } = useChatStore();
 
-  const { activeLessonConceptId, isLessonActive } = useLessonStore();
-  const { concepts } = useGraphStore();
+  const { activeLessonConceptId, activeLessonConceptDomain, isLessonActive } = useLessonStore();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const concept = concepts.find((c) => c.id === activeLessonConceptId);
-  const domainColor = concept ? DOMAIN_COLORS[concept.domain] : "#06b6d4";
+  const domainColor = activeLessonConceptDomain ? DOMAIN_COLORS[activeLessonConceptDomain] : "#06b6d4";
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -100,7 +61,7 @@ export default function SocraticChat() {
     addMessage(userMsg);
     setInput("");
 
-    const ctx = buildLessonContext();
+    const ctx = useLessonStore.getState().getLessonContext();
     if (!ctx) return;
 
     // Prepare message history for the API (strip IDs)

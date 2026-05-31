@@ -1,8 +1,10 @@
 import { create } from "zustand";
-import type { Lesson, LessonBlock, SpatialBlock } from "@/types";
+import type { Concept, ConceptDomain, Lesson, LessonBlock, SpatialBlock } from "@/types";
+import { DOMAIN_LABELS } from "@/types";
 import { rectIntersects } from "@/lib/utils";
 import { useChatStore } from "@/store/chat-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
+import type { LessonContext } from "@/lib/socratic-prompt";
 
 // Analytics helper — fire-and-forget, only runs in browser
 function analyticsTrack(event: string, props?: Record<string, unknown>) {
@@ -30,6 +32,8 @@ interface LessonState {
   // Active lesson
   activeLesson: Lesson | null;
   activeLessonConceptId: string | null;
+  activeLessonConceptTitle: string | null;
+  activeLessonConceptDomain: ConceptDomain | null;
 
   // Slide navigation — each "slide" is one block from content_schema
   currentSlideIndex: number;
@@ -54,9 +58,10 @@ interface LessonState {
   getBlockAnswer: (blockId: string) => BlockAnswer;
   canAdvance: () => boolean;
   getProgress: () => number; // 0-1
+  getLessonContext: () => LessonContext | null;
 
   // Actions
-  startLesson: (lesson: Lesson, conceptId: string) => void;
+  startLesson: (lesson: Lesson, concept: Pick<Concept, "id" | "title" | "domain">) => void;
   exitLesson: () => void;
   nextSlide: () => void;
   prevSlide: () => void;
@@ -69,6 +74,8 @@ interface LessonState {
 export const useLessonStore = create<LessonState>((set, get) => ({
   activeLesson: null,
   activeLessonConceptId: null,
+  activeLessonConceptTitle: null,
+  activeLessonConceptDomain: null,
   currentSlideIndex: 0,
   totalSlides: 0,
   answers: {},
@@ -130,7 +137,41 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     return (currentSlideIndex + 1) / totalSlides;
   },
 
-  startLesson: (lesson, conceptId) => {
+  getLessonContext: () => {
+    const state = get();
+    const {
+      activeLesson,
+      activeLessonConceptId,
+      activeLessonConceptTitle,
+      activeLessonConceptDomain,
+      currentSlideIndex,
+      totalSlides,
+    } = state;
+    if (!activeLesson || !activeLessonConceptId || !activeLessonConceptTitle || !activeLessonConceptDomain)
+      return null;
+
+    const block = state.getCurrentBlock();
+    if (!block) return null;
+
+    const answer = state.getBlockAnswer(block.id);
+    const { id: _id, order: _order, ...blockContent } = block;
+
+    return {
+      lessonTitle: activeLesson.title,
+      lessonDescription: activeLesson.description ?? "",
+      conceptTitle: activeLessonConceptTitle,
+      conceptDomain: DOMAIN_LABELS[activeLessonConceptDomain],
+      currentBlockType: block.type,
+      currentBlockContent: blockContent as Record<string, unknown>,
+      studentAnswer: answer.value,
+      attemptCount: answer.attempts,
+      slideIndex: currentSlideIndex,
+      totalSlides,
+      lessonProgress: state.getProgress(),
+    };
+  },
+
+  startLesson: (lesson, concept) => {
     const sorted = [...lesson.content_schema].sort(
       (a, b) => a.order - b.order
     );
@@ -166,7 +207,9 @@ export const useLessonStore = create<LessonState>((set, get) => ({
 
     set({
       activeLesson: lesson,
-      activeLessonConceptId: conceptId,
+      activeLessonConceptId: concept.id,
+      activeLessonConceptTitle: concept.title,
+      activeLessonConceptDomain: concept.domain,
       currentSlideIndex: 0,
       totalSlides: sorted.length,
       answers: initialAnswers,
@@ -177,9 +220,9 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     });
 
     // Start telemetry session
-    useTelemetryStore.getState().startSession(lesson.id, conceptId);
+    useTelemetryStore.getState().startSession(lesson.id, concept.id);
     // Track funnel event
-    analyticsTrack("lesson_started", { conceptId, lessonId: lesson.id });
+    analyticsTrack("lesson_started", { conceptId: concept.id, lessonId: lesson.id });
     // Enter first slide
     if (sorted.length > 0) {
       useTelemetryStore.getState().enterSlide(sorted[0].id, sorted[0].type);
@@ -192,6 +235,8 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     set({
       activeLesson: null,
       activeLessonConceptId: null,
+      activeLessonConceptTitle: null,
+      activeLessonConceptDomain: null,
       currentSlideIndex: 0,
       totalSlides: 0,
       answers: {},

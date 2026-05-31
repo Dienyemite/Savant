@@ -109,9 +109,9 @@ export default function LessonModal() {
 
   const { startLesson } = useLessonStore();
 
-  const handleLaunchLesson = (lesson: Lesson, conceptId: string) => {
+  const handleLaunchLesson = (lesson: Lesson, _conceptId: string) => {
     closeLessonModal();
-    startLesson(lesson, conceptId);
+    startLesson(lesson, concept);
   };
 
   if (!selectedConceptId) return null;

@@ -1,14 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useEffect, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLessonStore } from "@/store/lesson-store";
 import { useGraphStore } from "@/store/graph-store";
 import { useTelemetryStore } from "@/store/telemetry-store";
-import { useCanvasStore } from "@/store/canvas-store";
-import { useChatStore } from "@/store/chat-store";
 import { DOMAIN_LABELS } from "@/types";
-import { buildAnnotationPrompt, streamToMarginalia } from "@/lib/smart-annotation";
 import LessonBlockRenderer from "./LessonBlockRenderer";
 import NotebookCanvas, { type NotebookCanvasHandle } from "./NotebookCanvas";
 import SocraticChat from "./SocraticChat";
@@ -16,6 +13,7 @@ import MarginaliaAnnotations from "./MarginaliaAnnotations";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SelectionTrigger from "./SelectionTrigger";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { useLessonLifecycle } from "@/hooks/useLessonLifecycle";
 
 // ════════════════════════════════════════════════════════════
 // LessonView — The notebook page learning experience.
@@ -50,102 +48,31 @@ export default function LessonView() {
     canAdvance,
     getProgress,
     getCurrentBlock,
-    nextSlide,
-    prevSlide,
-    exitLesson,
-    completeLesson,
     updateSpatialIndex,
     spatialIndex,
-    queryByRect,
   } = useLessonStore();
 
-  const { updateProgress, concepts, recentlyUnlockedIds } = useGraphStore();
-  const { setStrokeCommitHandler, clearStrokeCommitHandler } = useCanvasStore();
-  const { addMarginaliaEntry, updateMarginalia, finishMarginalia } = useChatStore();
+  const { concepts, recentlyUnlockedIds } = useGraphStore();
   const canvasRef = useRef<NotebookCanvasHandle>(null);
   /** Ref for the scrollable content column — used by SelectionTrigger */
   const contentRef = useRef<HTMLDivElement>(null);
-
-  // Debounced lesson canvas save
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scheduleCanvasSave = useCallback(() => {
-    if (!activeLessonConceptId) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      const state = canvasRef.current?.getState();
-      if (!state) return;
-      fetch("/api/canvas", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conceptId: activeLessonConceptId,
-          strokes: state.strokes,
-          textNodes: state.textNodes,
-        }),
-      }).catch(() => {/* silent */});
-    }, 500);
-  }, [activeLessonConceptId]);
-
-  // Dev-only: show spatial index debug overlay with ?debug=spatial
-  const [isDebugSpatial, setIsDebugSpatial] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsDebugSpatial(
-        new URLSearchParams(window.location.search).get("debug") === "spatial"
-      );
-    }
-  }, []);
-
-  // Load persisted lesson canvas state when lesson activates
-  useEffect(() => {
-    if (!activeLessonConceptId || !isLessonActive) return;
-    fetch(`/api/canvas?conceptId=${encodeURIComponent(activeLessonConceptId)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json: { strokes?: unknown[]; textNodes?: unknown[] } | null) => {
-        if (!json) return;
-        canvasRef.current?.loadState({
-          strokes: (json.strokes ?? []) as import("./NotebookCanvas").CanvasState["strokes"],
-          textNodes: (json.textNodes ?? []) as import("./NotebookCanvas").CanvasState["textNodes"],
-        });
-      })
-      .catch(() => {/* silent — blank canvas on load failure */});
-  }, [activeLessonConceptId, isLessonActive]);
-
-  // Load persisted annotations when lesson activates
-  useEffect(() => {
-    if (!activeLessonConceptId || !isLessonActive) return;
-    fetch(`/api/annotations?conceptId=${encodeURIComponent(activeLessonConceptId)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(
-        (json: {
-          data?: {
-            anchor_y: number;
-            selected_text: string;
-            content: string;
-            annotation_type: string;
-          }[];
-        } | null) => {
-          if (!json?.data) return;
-          for (const a of json.data) {
-            const source = a.annotation_type === "highlight" ? "highlight" : "selection";
-            const id = addMarginaliaEntry(a.anchor_y, a.selected_text, source as "selection" | "highlight");
-            updateMarginalia(id, a.content);
-            finishMarginalia(id);
-          }
-        }
-      )
-      .catch(() => {/* silent */});
-  // Only run once per lesson session — not on every currentSlideIndex change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLessonConceptId, isLessonActive]);
-
-  const currentBlock = getCurrentBlock();
-  const isLastSlide = currentSlideIndex === totalSlides - 1;
 
   const concept = useMemo(
     () => concepts.find((c) => c.id === activeLessonConceptId),
     [concepts, activeLessonConceptId]
   );
+
+  const {
+    handleNext,
+    handlePrev,
+    handleComplete,
+    handleExit,
+    handleHighlightComplete,
+    isDebugSpatial,
+  } = useLessonLifecycle({ canvasRef, conceptTitle: concept?.title });
+
+  const currentBlock = getCurrentBlock();
+  const isLastSlide = currentSlideIndex === totalSlides - 1;
 
   // Elapsed time for the page footer note
   const elapsedSeconds = startedAt
@@ -157,85 +84,7 @@ export default function LessonView() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  // Progress fraction
   const progress = getProgress();
-
-  // Clear canvas annotations when turning pages
-  const handleNext = useCallback(() => {
-    canvasRef.current?.clear();
-    if (isLastSlide) {
-      handleComplete();
-    } else {
-      nextSlide();
-    }
-  }, [isLastSlide, nextSlide]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handlePrev = useCallback(() => {
-    canvasRef.current?.clear();
-    prevSlide();
-  }, [prevSlide]);
-
-  const handleComplete = useCallback(() => {
-    completeLesson();
-    if (activeLessonConceptId) {
-      updateProgress(activeLessonConceptId, "mastered");
-    }
-  }, [completeLesson, activeLessonConceptId, updateProgress]);
-
-  const handleExit = useCallback(() => exitLesson(), [exitLesson]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isLessonActive) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" && canAdvance()) handleNext();
-      else if (e.key === "ArrowLeft") handlePrev();
-      else if (e.key === "Escape") handleExit();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isLessonActive, canAdvance, handleNext, handlePrev, handleExit]);
-
-  // Register stroke commit handler for Smart Annotation
-  // Note: This fires for InkLayer strokes (constellation context).
-  // Lesson-context highlights go through NotebookCanvas.onHighlightComplete below.
-  useEffect(() => {
-    if (!isLessonActive) return;
-    setStrokeCommitHandler((stroke) => {
-      if (stroke.tool !== "highlight") return;
-      // Constellation-level highlight: no-op for now (lesson overlay covers InkLayer)
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[SmartAnnotation] constellation highlight", stroke.id);
-      }
-    });
-    return () => clearStrokeCommitHandler();
-  }, [isLessonActive, setStrokeCommitHandler, clearStrokeCommitHandler]);
-
-  /**
-   * Called when the user draws a highlight stroke in NotebookCanvas (lesson context).
-   * Queries the spatial index for covered text blocks and streams a margin annotation.
-   */
-  const handleHighlightComplete = useCallback(
-    async (rect: DOMRect) => {
-      const coveredBlocks = queryByRect(rect);
-      if (coveredBlocks.length === 0) return; // stroke not over any lesson text
-
-      const coveredText = coveredBlocks.map((b) => b.text).join(" ");
-      const anchorY = rect.top + rect.height / 2;
-      const marginaliaId = addMarginaliaEntry(anchorY, coveredText, "highlight");
-
-      const annotationPrompt = buildAnnotationPrompt({
-        coveredText,
-        conceptTitle: concept?.title ?? "this concept",
-        slideIndex: currentSlideIndex,
-      });
-
-      await streamToMarginalia(marginaliaId, annotationPrompt);
-      scheduleCanvasSave();
-    },
-    [queryByRect, addMarginaliaEntry, concept, currentSlideIndex, scheduleCanvasSave]
-  );
-
   const pageNumber = currentSlideIndex + 1;
   const domainLabel = concept ? DOMAIN_LABELS[concept.domain] : "";
 
