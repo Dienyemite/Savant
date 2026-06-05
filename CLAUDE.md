@@ -79,3 +79,15 @@ Default role names match the canonical set (needs-triage, needs-info, ready-for-
 ### Domain docs
 
 Single-context repo. Domain glossary in `CONTEXT.md`; architectural decisions in `docs/adr/`. See `docs/agents/domain.md`.
+
+### Engineering skills
+
+Located in `engineering/`. Active agent skills:
+
+- **`/tdd`** — test-driven development (red-green-refactor, vertical slices). See `engineering/tdd.md`.
+- **`/grill-with-docs`** — stress-test a plan against the domain model; update `CONTEXT.md` and ADRs inline. See `engineering/grill-with-docs.md`.
+- **`/improve-codebase-architecture`** — surface shallow modules and propose deepening candidates as an HTML report. See `engineering/improve-codebase-architecture.md`.
+- **`/prototype`** — throwaway prototype (logic TUI or UI variants). See `engineering/prototype.md`.
+
+Reference docs the above skills depend on (do not edit names):
+`engineering/LANGUAGE.md`, `engineering/DEEPENING.md`, `engineering/ADR-FORMAT.md`, `engineering/CONTEXT-FORMAT.md`, `engineering/HTML-REPORT.md`, `engineering/deep-modules.md`, `engineering/tests.md`, `engineering/mocking.md`, `engineering/refactoring.md`, `engineering/interface-design.md`.

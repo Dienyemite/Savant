@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLessonStore } from "@/store/lesson-store";
 import type { MultipleChoiceBlock } from "@/types";
@@ -10,23 +10,43 @@ interface Props {
   block: MultipleChoiceBlock;
 }
 
+const DEFAULT_ANSWER = { value: null as string | null, validationState: "idle" as const, attempts: 0 };
+
 export default function MultipleChoiceRenderer({ block }: Props) {
-  const { getBlockAnswer, setAnswer, validateBlock } = useLessonStore();
-  const answer = getBlockAnswer(block.id);
-  const selectedId = answer.value as string | null;
-  const validation = answer.validationState;
+  // Subscribe directly to the answers slice so the component re-renders when
+  // validateBlock or setAnswer updates answers[block.id].
+  const answer = useLessonStore(
+    (state) => (state.answers[block.id] as { value: string | null; validationState: "idle" | "correct" | "incorrect"; attempts: number } | undefined) ?? DEFAULT_ANSWER
+  );
+  const setAnswer = useLessonStore((state) => state.setAnswer);
+  const validateBlock = useLessonStore((state) => state.validateBlock);
+  const selectedId = answer.value;
+
+  // Local validation state — always works even without an active lesson (notebook page context).
+  // When startLesson() has been called (LessonView context), the store's validateBlock also
+  // updates answer.validationState, which takes precedence via the merged value below.
+  const [localValidation, setLocalValidation] = useState<"idle" | "correct" | "incorrect">("idle");
+
+  // Store-level validation takes precedence; local is the fallback for notebook context.
+  const validation = answer.validationState !== "idle" ? answer.validationState : localValidation;
 
   const handleSelect = useCallback(
     (optionId: string) => {
       if (validation === "correct") return;
       setAnswer(block.id, optionId);
+      setLocalValidation("idle"); // Reset on new selection
     },
     [validation, setAnswer, block.id]
   );
 
   const handleSubmit = useCallback(() => {
+    if (!selectedId) return;
+    // Always validate locally — this works regardless of whether a lesson is active.
+    const isCorrect = selectedId === block.correct_option_id;
+    setLocalValidation(isCorrect ? "correct" : "incorrect");
+    // Also notify the lesson store so canAdvance() works in LessonView context.
     validateBlock(block.id);
-  }, [block.id, validateBlock]);
+  }, [block.id, block.correct_option_id, selectedId, validateBlock]);
 
   return (
     <motion.div
