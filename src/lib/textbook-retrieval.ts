@@ -7,24 +7,29 @@
  * Called by /api/pages/[id]/generate-lesson before invoking Teacher AI.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { TextbookChunk } from "@/types";
-
-// Service-role client — only used server-side in API routes
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 /**
  * Embeds `topic` using OpenAI text-embedding-3-large, then queries
  * match_textbook_chunks RPC for the top-k most relevant passages.
+ *
+ * `client` is optional — callers may inject an already-constructed
+ * SupabaseClient (e.g. a service-role admin client or a test stub).
+ * When omitted, a service-role client is created lazily from env vars.
  */
 export async function retrieveChunks(
   topic: string,
   subject: string,
-  matchCount = 10
+  matchCount = 10,
+  client?: SupabaseClient
 ): Promise<TextbookChunk[]> {
+  const supabase =
+    client ??
+    createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) {
     console.warn("[textbook-retrieval] OPENAI_API_KEY not set — skipping RAG");
@@ -60,7 +65,7 @@ export async function retrieveChunks(
   if (!embedding) return [];
 
   // Vector similarity search via Supabase RPC
-  const { data, error } = await supabaseAdmin.rpc("match_textbook_chunks", {
+  const { data, error } = await supabase.rpc("match_textbook_chunks", {
     query_embedding: embedding,
     subject_filter: subject.toLowerCase(),
     match_count: matchCount,

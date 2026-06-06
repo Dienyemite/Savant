@@ -4,30 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import type { Notebook } from "@/types";
 
-function makeSupabase(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll(); },
-        setAll(toSet) {
-          toSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
-
 export async function GET() {
   const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,7 +28,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
-  const supabase = makeSupabase(cookieStore);
+  const supabase = createServerClient(cookieStore);
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -12,6 +12,9 @@ import NotebookCover from "@/components/cover/NotebookCover";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useCanvasStore } from "@/store/canvas-store";
 import { useGraphStore } from "@/store/graph-store";
+import { useLessonStore, type ChatEvent, type TelemetryEvent } from "@/store/lesson-store";
+import { useChatStore } from "@/store/chat-store";
+import { useTelemetryStore } from "@/store/telemetry-store";
 import { useAuth } from "@/components/AuthProvider";
 import type { ProgressStatus } from "@/types";
 import type { InkStroke, GlobalTextNote } from "@/store/canvas-store";
@@ -29,6 +32,10 @@ export default function Home() {
   const hydrateProgress = useGraphStore((s) => s.hydrateProgress);
   const setProgressPersistHandler = useGraphStore((s) => s.setProgressPersistHandler);
   const clearProgressPersistHandler = useGraphStore((s) => s.clearProgressPersistHandler);
+  const setChatEventHandler = useLessonStore((s) => s.setChatEventHandler);
+  const clearChatEventHandler = useLessonStore((s) => s.clearChatEventHandler);
+  const setTelemetryEventHandler = useLessonStore((s) => s.setTelemetryEventHandler);
+  const clearTelemetryEventHandler = useLessonStore((s) => s.clearTelemetryEventHandler);
   const { user } = useAuth();
 
   // Apply onboarding selections persisted to sessionStorage by /onboarding.
@@ -76,6 +83,30 @@ export default function Home() {
     });
     return () => clearProgressPersistHandler();
   }, [user, setProgressPersistHandler, clearProgressPersistHandler]);
+
+  // Wire lesson-store → chat + telemetry callbacks (Ports & Adapters).
+  // Keeps lesson-store free of direct store imports; this boundary owns the wiring.
+  useEffect(() => {
+    setChatEventHandler((event: ChatEvent) => {
+      if (event === "reset") useChatStore.getState().resetChat();
+      else useChatStore.getState().triggerFromFailure();
+    });
+    setTelemetryEventHandler((event: TelemetryEvent) => {
+      const ts = useTelemetryStore.getState();
+      switch (event.type) {
+        case "startSession": ts.startSession(event.lessonId, event.conceptId); break;
+        case "enterSlide": ts.enterSlide(event.blockId, event.blockType); break;
+        case "resetSession": ts.resetSession(); break;
+        case "recordInteraction": ts.recordInteraction(); break;
+        case "recordAttempt": ts.recordAttempt(event.result); break;
+        case "completeSession": ts.completeSession(); break;
+      }
+    });
+    return () => {
+      clearChatEventHandler();
+      clearTelemetryEventHandler();
+    };
+  }, [setChatEventHandler, clearChatEventHandler, setTelemetryEventHandler, clearTelemetryEventHandler]);
 
   // Load persisted global canvas state from Supabase when user is authenticated
   useEffect(() => {

@@ -2,8 +2,6 @@ import { create } from "zustand";
 import type { Concept, ConceptDomain, Lesson, LessonBlock, SpatialBlock } from "@/types";
 import { DOMAIN_LABELS } from "@/types";
 import { rectIntersects } from "@/lib/utils";
-import { useChatStore } from "@/store/chat-store";
-import { useTelemetryStore } from "@/store/telemetry-store";
 import type { LessonContext } from "@/lib/socratic-prompt";
 
 // Analytics helper — fire-and-forget, only runs in browser
@@ -27,6 +25,21 @@ export interface BlockAnswer {
   validationState: ValidationState;
   attempts: number;
 }
+
+// ── Callback event types (Ports & Adapters) ──────────────────────────────────
+// These allow the lesson store to signal events to chat and telemetry stores
+// without importing them directly. The page that mounts the lesson wires the
+// callbacks — matching the onProgressPersist pattern in graph-store.
+
+export type ChatEvent = "reset" | "triggerFromFailure";
+
+export type TelemetryEvent =
+  | { type: "startSession"; lessonId: string; conceptId: string }
+  | { type: "enterSlide"; blockId: string; blockType: string }
+  | { type: "resetSession" }
+  | { type: "recordInteraction" }
+  | { type: "recordAttempt"; result: "correct" | "incorrect" }
+  | { type: "completeSession" };
 
 interface LessonState {
   // Active lesson
@@ -69,6 +82,14 @@ interface LessonState {
   setAnswer: (blockId: string, value: unknown) => void;
   validateBlock: (blockId: string) => ValidationState;
   completeLesson: () => void;
+
+  // Injected callbacks (same pattern as graph-store's onProgressPersist)
+  onChatEvent?: (event: ChatEvent) => void;
+  setChatEventHandler: (fn: (event: ChatEvent) => void) => void;
+  clearChatEventHandler: () => void;
+  onTelemetryEvent?: (event: TelemetryEvent) => void;
+  setTelemetryEventHandler: (fn: (event: TelemetryEvent) => void) => void;
+  clearTelemetryEventHandler: () => void;
 }
 
 export const useLessonStore = create<LessonState>((set, get) => ({
@@ -84,6 +105,9 @@ export const useLessonStore = create<LessonState>((set, get) => ({
   isLessonComplete: false,
   startedAt: null,
   completedAt: null,
+
+  onChatEvent: undefined,
+  onTelemetryEvent: undefined,
 
   updateSpatialIndex: (blocks) => {
     set((state) => {
@@ -220,18 +244,18 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     });
 
     // Start telemetry session
-    useTelemetryStore.getState().startSession(lesson.id, concept.id);
+    get().onTelemetryEvent?.({ type: "startSession", lessonId: lesson.id, conceptId: concept.id });
     // Track funnel event
     analyticsTrack("lesson_started", { conceptId: concept.id, lessonId: lesson.id });
     // Enter first slide
     if (sorted.length > 0) {
-      useTelemetryStore.getState().enterSlide(sorted[0].id, sorted[0].type);
+      get().onTelemetryEvent?.({ type: "enterSlide", blockId: sorted[0].id, blockType: sorted[0].type });
     }
   },
 
   exitLesson: () => {
-    useChatStore.getState().resetChat();
-    useTelemetryStore.getState().resetSession();
+    get().onChatEvent?.("reset");
+    get().onTelemetryEvent?.({ type: "resetSession" });
     set({
       activeLesson: null,
       activeLessonConceptId: null,
@@ -256,7 +280,7 @@ export const useLessonStore = create<LessonState>((set, get) => ({
         ? [...state.activeLesson.content_schema].sort((a, b) => a.order - b.order)
         : [];
       if (sorted[next]) {
-        useTelemetryStore.getState().enterSlide(sorted[next].id, sorted[next].type);
+        get().onTelemetryEvent?.({ type: "enterSlide", blockId: sorted[next].id, blockType: sorted[next].type });
       }
       return { currentSlideIndex: next, spatialIndex: [] };
     }),
@@ -269,7 +293,7 @@ export const useLessonStore = create<LessonState>((set, get) => ({
         ? [...state.activeLesson.content_schema].sort((a, b) => a.order - b.order)
         : [];
       if (sorted[prev]) {
-        useTelemetryStore.getState().enterSlide(sorted[prev].id, sorted[prev].type);
+        get().onTelemetryEvent?.({ type: "enterSlide", blockId: sorted[prev].id, blockType: sorted[prev].type });
       }
       return { currentSlideIndex: prev, spatialIndex: [] };
     }),
@@ -281,7 +305,7 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     }),
 
   setAnswer: (blockId, value) => {
-    useTelemetryStore.getState().recordInteraction();
+    get().onTelemetryEvent?.({ type: "recordInteraction" });
     set((state) => ({
       answers: {
         ...state.answers,
@@ -360,20 +384,18 @@ export const useLessonStore = create<LessonState>((set, get) => ({
     }));
 
     // Record attempt in telemetry
-    useTelemetryStore.getState().recordAttempt(
-      validationState as "correct" | "incorrect"
-    );
+    get().onTelemetryEvent?.({ type: "recordAttempt", result: validationState as "correct" | "incorrect" });
 
     // Auto-trigger Socratic tutor after 2 failed attempts (per spec §2.3)
     if (validationState === "incorrect" && newAttempts >= 2) {
-      useChatStore.getState().triggerFromFailure();
+      get().onChatEvent?.("triggerFromFailure");
     }
 
     return validationState;
   },
 
   completeLesson: () => {
-    useTelemetryStore.getState().completeSession();
+    get().onTelemetryEvent?.({ type: "completeSession" });
     const { activeLesson, activeLessonConceptId, currentSlideIndex, totalSlides, startedAt } = get();
     analyticsTrack("lesson_completed", {
       conceptId: activeLessonConceptId ?? "",
@@ -386,4 +408,9 @@ export const useLessonStore = create<LessonState>((set, get) => ({
       completedAt: Date.now(),
     });
   },
+
+  setChatEventHandler: (fn) => set({ onChatEvent: fn }),
+  clearChatEventHandler: () => set({ onChatEvent: undefined }),
+  setTelemetryEventHandler: (fn) => set({ onTelemetryEvent: fn }),
+  clearTelemetryEventHandler: () => set({ onTelemetryEvent: undefined }),
 }));
