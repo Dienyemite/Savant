@@ -54,6 +54,7 @@ export async function PATCH(
     title?: string;
     is_pinned?: boolean;
     is_favorited?: boolean;
+    completed_at?: string | null;
   } | null;
   if (!body) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
 
@@ -61,6 +62,7 @@ export async function PATCH(
   if (typeof body.title === "string")       allowed.title = body.title;
   if (typeof body.is_pinned === "boolean")  allowed.is_pinned = body.is_pinned;
   if (typeof body.is_favorited === "boolean") allowed.is_favorited = body.is_favorited;
+  if ("completed_at" in body)               allowed.completed_at = body.completed_at ?? null;
 
   if (Object.keys(allowed).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });

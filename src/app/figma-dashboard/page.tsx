@@ -7,9 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell, Plus, ChevronDown, Book, FileText,
   Star, Users, Trash2, ArrowUpRight, Pin,
-  LayoutGrid, List, X, Loader2, Check, MoreVertical,
+  LayoutGrid, List, X, Loader2, Check, MoreVertical, Lock,
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabase";
+import CurriculumTourModal from "@/components/CurriculumTourModal";
+import { useCurriculumGeneration } from "@/hooks/useCurriculumGeneration";
 import type { Notebook, Page } from "@/types";
 import type { User } from "@supabase/supabase-js";
 
@@ -125,10 +127,13 @@ export default function FigmaDashboard() {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showNotebookModal, setShowNotebookModal] = useState(false);
   const [showPageModal, setShowPageModal] = useState(false);
+  const [pendingTourNotebook, setPendingTourNotebook] = useState<Notebook | null>(null);
   const [contextMenu, setContextMenu] = useState<{ pageId: string; x: number; y: number } | null>(null);
   const [renamingPageId, setRenamingPageId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const curriculumGen = useCurriculumGeneration();
 
   const searchRef = useRef<HTMLInputElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
@@ -225,6 +230,33 @@ export default function FigmaDashboard() {
     () => allPages.filter((p) => p.is_favorited).slice(0, 4),
     [allPages]
   );
+
+  function isPageLocked(page: Page): boolean {
+    const nb = notebooks.find((n) => n.id === page.notebook_id);
+    if (!nb?.curriculum_tour) return false; // only lock curriculum tour pages
+    if (page.order === 0) return false;       // first page is always unlocked
+    const pagesInNb = allPages
+      .filter((p) => p.notebook_id === page.notebook_id)
+      .sort((a, b) => a.order - b.order);
+    const prev = pagesInNb.find((p) => p.order === page.order - 1);
+    return !prev?.completed_at;
+  }
+
+  function handlePageClick(page: Page) {
+    if (isPageLocked(page)) {
+      const pagesInNb = allPages
+        .filter((p) => p.notebook_id === page.notebook_id)
+        .sort((a, b) => a.order - b.order);
+      const prev = pagesInNb.find((p) => p.order === page.order - 1);
+      showToast(`Complete "${prev?.title ?? "previous lesson"}" to unlock this`);
+      return;
+    }
+    router.push(`/figma-canvas/${page.notebook_id}/${page.id}`);
+  }
+
+  function isPageReady(page: Page): boolean {
+    return !!page.lesson_generated_at || curriculumGen.completedIds.has(page.id);
+  }
 
   function notebookFor(page: Page) {
     return notebooks.find((n) => n.id === page.notebook_id);
@@ -417,6 +449,19 @@ export default function FigmaDashboard() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative z-10">
         <header className="h-[120px] border-b border-white/10 flex items-center justify-between px-16 relative bg-transparent flex-shrink-0">
+          {/* Background generation progress bar */}
+          {curriculumGen.isActive && (
+            <motion.div
+              className="absolute bottom-0 left-0 h-[1px] bg-white"
+              initial={{ width: "0%" }}
+              animate={{
+                width: `${curriculumGen.progress.total > 0
+                  ? (curriculumGen.progress.done / curriculumGen.progress.total) * 100
+                  : 0}%`,
+              }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          )}
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4 text-[9px] uppercase tracking-[0.3em] text-white/40">
               <span>Workspace</span>
@@ -583,6 +628,9 @@ export default function FigmaDashboard() {
                       page={page}
                       notebook={notebookFor(page)}
                       viewMode={viewMode}
+                      isLocked={isPageLocked(page)}
+                      isReady={isPageReady(page)}
+                      isGenerating={curriculumGen.currentId === page.id}
                       onPin={() => togglePin(page)}
                       onStar={() => toggleStar(page)}
                       onContextMenu={(x, y) => setContextMenu({ pageId: page.id, x, y })}
@@ -591,7 +639,7 @@ export default function FigmaDashboard() {
                       onRenameChange={setRenameValue}
                       onRenameCommit={() => renamePage(page.id, renameValue)}
                       onRenameCancel={() => setRenamingPageId(null)}
-                      onClick={() => router.push(`/figma-canvas/${page.notebook_id}/${page.id}`)}
+                      onClick={() => handlePageClick(page)}
                     />
                   ))}
                 </div>
@@ -674,7 +722,26 @@ export default function FigmaDashboard() {
             setNotebooks((prev) => [nb, ...prev]);
             setActiveNotebookId(nb.id);
             setShowNotebookModal(false);
+            setPendingTourNotebook(nb);
+          }}
+        />
+      )}
+
+      {pendingTourNotebook && (
+        <CurriculumTourModal
+          notebook={pendingTourNotebook}
+          onSkip={() => {
+            setPendingTourNotebook(null);
             showToast("Notebook created");
+          }}
+          onStart={(pages) => {
+            setAllPages((prev) => [...prev, ...pages]);
+            setPendingTourNotebook(null);
+            showToast(`Course created — ${pages.length} lessons queued`);
+            curriculumGen.start(pages.map((p) => p.id));
+            // Navigate to page 1 immediately
+            const first = pages[0];
+            if (first) router.push(`/figma-canvas/${first.notebook_id}/${first.id}`);
           }}
         />
       )}
@@ -761,6 +828,9 @@ function DashPageCard({
   page,
   notebook,
   viewMode,
+  isLocked = false,
+  isReady = true,
+  isGenerating = false,
   onPin,
   onStar,
   onContextMenu,
@@ -774,6 +844,9 @@ function DashPageCard({
   page: Page;
   notebook: Notebook | undefined;
   viewMode: "grid" | "list";
+  isLocked?: boolean;
+  isReady?: boolean;
+  isGenerating?: boolean;
   onPin: () => void;
   onStar: () => void;
   onContextMenu: (x: number, y: number) => void;
@@ -832,7 +905,7 @@ function DashPageCard({
   return (
     <div
       onClick={onClick}
-      className="group bg-black relative overflow-hidden h-96 flex flex-col cursor-none"
+      className={`group bg-black relative overflow-hidden h-96 flex flex-col cursor-none ${isLocked ? "opacity-50" : ""}`}
     >
       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/[0.02] transition-colors duration-500 z-0" />
       <motion.div
@@ -842,6 +915,29 @@ function DashPageCard({
       >
         <div className="absolute top-1/4 left-0 w-1.5 h-1.5 bg-white/30 rounded-full" />
       </motion.div>
+
+      {/* Lock overlay */}
+      {isLocked && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/40">
+          <Lock className="w-5 h-5 text-white/40" />
+          <span className="text-[9px] uppercase tracking-[0.3em] text-white/30">Locked</span>
+        </div>
+      )}
+
+      {/* Generating indicator */}
+      {isGenerating && !isLocked && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <Loader2 className="w-3 h-3 text-white/40 animate-spin" />
+          <span className="text-[8px] uppercase tracking-[0.2em] text-white/30">Preparing</span>
+        </div>
+      )}
+
+      {/* Not yet ready badge (queued but not generating) */}
+      {!isReady && !isGenerating && !isLocked && (
+        <div className="absolute top-4 right-4 z-20">
+          <span className="text-[8px] uppercase tracking-[0.2em] text-white/20">Queued</span>
+        </div>
+      )}
 
       <div className="flex-1 p-10 relative z-10 flex flex-col justify-between">
         <div>

@@ -316,7 +316,7 @@ def insert_chunks(
                 "chapter": c["chapter"],
                 "section": c["section"],
                 "content": c["content"],
-                "embedding": c["embedding"],   # list[float], 3072 elements
+                "embedding": c["embedding"],   # list[float], 768 elements (vector(768))
             }
             for c in batch
         ]

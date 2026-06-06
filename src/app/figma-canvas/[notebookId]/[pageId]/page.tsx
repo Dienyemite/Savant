@@ -7,7 +7,7 @@ import {
   ChevronRight, CheckCircle2, Share, Plus, Settings, Trash2,
   MousePointer2, PenTool, Eraser, Type, Search,
   LayoutTemplate, Shapes, Files, HelpCircle,
-  Minus, Loader2, Sparkles, FileText,
+  Minus, Loader2, Sparkles, FileText, Lock,
 } from "lucide-react";
 import { useCanvasStore } from "@/store/canvas-store";
 import { useChatStore } from "@/store/chat-store";
@@ -44,6 +44,7 @@ export default function CanvasPage() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -158,6 +159,24 @@ export default function CanvasPage() {
     }
   }
 
+  async function markComplete() {
+    if (!page || page.completed_at) return;
+    setCompleting(true);
+    const now = new Date().toISOString();
+    setPage((p) => (p ? { ...p, completed_at: now } : p));
+    await fetch(`/api/pages/${pageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed_at: now }),
+    }).catch(() => {});
+    setCompleting(false);
+    // Navigate to the next page if one exists
+    const sorted = [...notebookPages].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((p) => p.id === pageId);
+    const next = sorted[idx + 1];
+    if (next) router.push(`/figma-canvas/${notebookId}/${next.id}`);
+  }
+
   async function addPage() {
     const res = await fetch(`/api/notebooks/${notebookId}/pages`, {
       method: "POST",
@@ -212,26 +231,36 @@ export default function CanvasPage() {
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-9 bg-white/5 rounded-lg animate-pulse" />
               ))
-            : notebookPages.map((p, idx) => (
-                <button
-                  key={p.id}
-                  onClick={() => router.push(`/figma-canvas/${notebookId}/${p.id}`)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                    p.id === pageId
-                      ? "bg-white text-black font-medium"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 rounded text-[10px] flex items-center justify-center border shrink-0 ${
-                      p.id === pageId ? "border-black text-black" : "border-white/50 text-white/50"
+            : notebookPages.map((p, idx) => {
+                const sorted = [...notebookPages].sort((a, b) => a.order - b.order);
+                const sortedIdx = sorted.findIndex((s) => s.id === p.id);
+                const prevPage = sorted[sortedIdx - 1];
+                const locked = notebook?.curriculum_tour && sortedIdx > 0 && !prevPage?.completed_at;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => !locked && router.push(`/figma-canvas/${notebookId}/${p.id}`)}
+                    disabled={!!locked}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                      p.id === pageId
+                        ? "bg-white text-black font-medium"
+                        : locked
+                        ? "text-white/20 cursor-not-allowed"
+                        : "text-white/70 hover:text-white hover:bg-white/10"
                     }`}
                   >
-                    {idx + 1}
-                  </span>
-                  <span className="truncate">{p.title}</span>
-                </button>
-              ))}
+                    <span
+                      className={`w-5 h-5 rounded text-[10px] flex items-center justify-center border shrink-0 ${
+                        p.id === pageId ? "border-black text-black" : locked ? "border-white/10 text-white/20" : "border-white/50 text-white/50"
+                      }`}
+                    >
+                      {locked ? <Lock className="w-2.5 h-2.5" /> : idx + 1}
+                    </span>
+                    <span className="truncate">{p.title}</span>
+                    {p.completed_at && <CheckCircle2 className="w-3 h-3 text-white/40 ml-auto shrink-0" />}
+                  </button>
+                );
+              })}
           <button
             onClick={addPage}
             className="w-full flex items-center gap-2 justify-center py-2 border border-white/30 hover:border-white hover:bg-white/10 rounded-lg text-sm text-white/70 hover:text-white transition-colors mt-2"
@@ -329,6 +358,40 @@ export default function CanvasPage() {
                     <LessonBlockRenderer block={positioned.block} />
                   </div>
                 ))}
+
+                {/* Completion footer — only shown for curriculum tour pages */}
+                {notebook?.curriculum_tour && (
+                  <div className="mt-8 pt-6 border-t border-white/20 flex items-center justify-between">
+                    {page?.completed_at ? (
+                      <div className="flex items-center gap-3 text-white/60">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-xs uppercase tracking-[0.2em]">Completed</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={markComplete}
+                        disabled={completing}
+                        className="bg-white text-black px-6 py-2 rounded-md text-sm font-medium hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {completing ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" />Saving…</>
+                        ) : (
+                          <><CheckCircle2 className="w-4 h-4" />Mark Complete &amp; Continue</>
+                        )}
+                      </button>
+                    )}
+                    {(() => {
+                      const sorted = [...notebookPages].sort((a, b) => a.order - b.order);
+                      const idx = sorted.findIndex((p) => p.id === pageId);
+                      const next = sorted[idx + 1];
+                      return next ? (
+                        <div className="text-xs text-white/40 uppercase tracking-[0.2em]">
+                          Next: {next.title}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           ) : (

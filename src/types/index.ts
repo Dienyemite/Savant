@@ -295,6 +295,7 @@ export interface Notebook {
   subject: string;
   learning_mode: LearningMode;
   emoji: string;
+  curriculum_tour: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -334,6 +335,7 @@ export interface Page {
   thumbnail_url: string | null;
   is_pinned: boolean;
   is_favorited: boolean;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
