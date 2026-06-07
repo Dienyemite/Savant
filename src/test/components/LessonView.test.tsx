@@ -24,11 +24,14 @@ vi.mock("framer-motion", async (importOriginal) => {
     AnimatePresence: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),
     motion: new Proxy(actual.motion as unknown as Record<string, unknown>, {
-      get: (_target, tag: string) =>
-        React.forwardRef(
+      get: (_target, tag: string) => {
+        const Comp = React.forwardRef(
           ({ children: c, ...props }: React.HTMLAttributes<Element>, ref) =>
             React.createElement(tag, { ...props, ref }, c)
-        ),
+        );
+        Comp.displayName = `motion.${tag}`;
+        return Comp;
+      },
     }),
   };
 });

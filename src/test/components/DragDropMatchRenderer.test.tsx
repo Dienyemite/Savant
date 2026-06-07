@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import DragDropMatchRenderer from "@/components/lesson/blocks/DragDropMatchRenderer";
 import { useLessonStore } from "@/store/lesson-store";
-import type { DragDropMatchBlock } from "@/types";
+import type { DragDropMatchBlock, Lesson } from "@/types";
 
 const BLOCK: DragDropMatchBlock = {
   id: "dd-test-1",
@@ -44,7 +44,7 @@ function resetStore() {
     answers: {
       "dd-test-1": { value: {}, validationState: "idle", attempts: 0 },
     },
-    activeLesson: STUB_LESSON as any,
+    activeLesson: STUB_LESSON as unknown as Lesson,
     activeLessonConceptId: "c-test",
     currentSlideIndex: 0,
     totalSlides: 1,

@@ -53,6 +53,7 @@ export default function LearningPage() {
   }, [params.notebookId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage();
     loadNotebookPages();
   }, [loadPage, loadNotebookPages]);

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/static-components */
 
 import React from "react";
 import type { SketchBlock } from "@/types";

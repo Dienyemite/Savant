@@ -74,10 +74,9 @@ export default function LessonView() {
   const currentBlock = getCurrentBlock();
   const isLastSlide = currentSlideIndex === totalSlides - 1;
 
-  // Elapsed time for the page footer note
-  const elapsedSeconds = startedAt
-    ? Math.floor((Date.now() - startedAt) / 1000)
-    : 0;
+  // Elapsed time for the page footer note — Date.now() is intentional here
+  // eslint-disable-next-line react-hooks/purity
+  const elapsedSeconds = startedAt ? Math.floor((Date.now() - startedAt) / 1000) : 0;
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;

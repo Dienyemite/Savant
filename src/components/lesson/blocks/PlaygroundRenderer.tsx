@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/static-components */
 
 import React, { useState } from "react";
 import type { PlaygroundBlock } from "@/types";

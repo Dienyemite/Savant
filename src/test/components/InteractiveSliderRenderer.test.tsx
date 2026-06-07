@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import InteractiveSliderRenderer from "@/components/lesson/blocks/InteractiveSliderRenderer";
 import { useLessonStore } from "@/store/lesson-store";
-import type { InteractiveSliderBlock } from "@/types";
+import type { InteractiveSliderBlock, Lesson } from "@/types";
 
 const BLOCK: InteractiveSliderBlock = {
   id: "slider-test-1",
@@ -38,7 +38,7 @@ function resetStore() {
     answers: {
       "slider-test-1": { value: 0, validationState: "idle", attempts: 0 },
     },
-    activeLesson: STUB_LESSON as any,
+    activeLesson: STUB_LESSON as unknown as Lesson,
     activeLessonConceptId: "c-test",
     currentSlideIndex: 0,
     totalSlides: 1,

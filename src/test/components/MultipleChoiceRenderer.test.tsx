@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import MultipleChoiceRenderer from "@/components/lesson/blocks/MultipleChoiceRenderer";
 import { useLessonStore } from "@/store/lesson-store";
-import type { MultipleChoiceBlock } from "@/types";
+import type { MultipleChoiceBlock, Lesson } from "@/types";
 
 const BLOCK: MultipleChoiceBlock = {
   id: "mc-test-1",
@@ -38,7 +38,7 @@ function resetStore() {
     answers: {
       "mc-test-1": { value: null, validationState: "idle", attempts: 0 },
     },
-    activeLesson: STUB_LESSON as any,
+    activeLesson: STUB_LESSON as unknown as Lesson,
     activeLessonConceptId: "c-test",
     currentSlideIndex: 0,
     totalSlides: 1,

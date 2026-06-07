@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // One-off Node.js script that uses require(); not part of the app bundle.
+    "write-canvas-page.cjs",
   ]),
 ]);
 

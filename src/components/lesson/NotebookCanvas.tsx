@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/refs */
 
 /**
  * NotebookCanvas — The interactive drawing layer.

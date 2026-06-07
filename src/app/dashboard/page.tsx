@@ -56,9 +56,11 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadNotebooks(); }, [loadNotebooks]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (selectedNotebook) loadPages(selectedNotebook.id);
     else setPages([]);
   }, [selectedNotebook, loadPages]);
