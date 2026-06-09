@@ -1,47 +1,22 @@
 #!/usr/bin/env python3
 """
-ingest_textbook.py — Savant textbook ingestion pipeline (OpenStax Content API)
+ingest_textbook.py — Savant textbook ingestion pipeline
 
-Fetches an OpenStax textbook via the public content API (no PDF download
-required), extracts structured text by chapter/section, embeds with OpenAI,
-and inserts chunks into the Supabase textbook_chunks table for RAG-powered
-lesson generation.
+Converts a PDF textbook into embedded chunks and inserts them into
+the Supabase textbook_chunks table for RAG-powered lesson generation.
 
 Usage:
     python ingest_textbook.py \
-        --openstax-slug "university-physics-volume-1" \
-        --subject "physics"
-
-    # Filter to specific numbered chapters (1-indexed):
-    python ingest_textbook.py \
-        --openstax-slug "calculus-volume-1" \
-        --subject "calculus" \
-        --chapters 1-5
-
-    # Override the book title stored in the DB:
-    python ingest_textbook.py \
-        --openstax-slug "biology-2e" \
-        --subject "biology" \
-        --book-title "OpenStax Biology 2e"
-
-    # Resume after a crash (skip first N chunks):
-    python ingest_textbook.py \
-        --openstax-slug "university-physics-volume-1" \
+        --pdf "path/to/textbook.pdf" \
         --subject "physics" \
-        --start-chunk 400
+        --book-title "University Physics Vol 1"
 
-Common OpenStax slugs → subject labels:
-    university-physics-volume-1  →  physics
-    university-physics-volume-2  →  physics
-    university-physics-volume-3  →  physics
-    calculus-volume-1            →  calculus
-    calculus-volume-2            →  calculus
-    algebra-and-trigonometry-2e  →  math
-    biology-2e                   →  biology
-    chemistry-2e                 →  chemistry
-    us-history                   →  history
-    psychology-2e                →  psychology
-    principles-economics-3e      →  economics
+    # Optional: limit to specific pages (0-indexed)
+    python ingest_textbook.py \
+        --pdf "textbook.pdf" \
+        --subject "calculus" \
+        --book-title "Calculus: Early Transcendentals" \
+        --pages 0-120
 """
 
 import argparse
@@ -50,10 +25,9 @@ import sys
 import time
 from pathlib import Path
 from typing import Generator
-
 import requests
 import tiktoken
-from bs4 import BeautifulSoup
+import pymupdf4llm
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -68,26 +42,14 @@ OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 
 # ─── Constants ───────────────────────────────────────────────────────────────
 EMBED_MODEL = "text-embedding-3-large"  # must match textbook-retrieval.ts
-EMBED_DIMS = 768                        # via dimensions param (MRL)
-TARGET_CHUNK_TOKENS = 400               # target size per chunk
-MAX_CHUNK_TOKENS = 500                  # hard cap before forced split
-CHUNK_OVERLAP_TOKENS = 50              # overlap between adjacent chunks
-EMBED_BATCH_SIZE = 100                 # items per OpenAI embeddings call
-SUPABASE_BATCH_SIZE = 50              # rows per Supabase insert
+EMBED_DIMS = 768                              # via dimensions param (MRL)
+TARGET_CHUNK_TOKENS = 400                # target size per chunk
+MAX_CHUNK_TOKENS = 500                   # hard cap before forced split
+CHUNK_OVERLAP_TOKENS = 50               # overlap between adjacent chunks
+EMBED_BATCH_SIZE = 100                  # items per OpenAI embeddings call
+SUPABASE_BATCH_SIZE = 50               # rows per Supabase insert
 
-# OpenStax public API endpoints
-OPENSTAX_CMS_BASE = "https://openstax.org/api/v2/books/"
-OPENSTAX_ARCHIVE_BASE = "https://openstax.org/apps/archive/latest/contents"
-REQUEST_DELAY = 0.2  # seconds between page fetches — respectful crawling
-
-TOKENIZER = tiktoken.get_encoding("cl100k_base")
-
-# Dedicated session for all OpenStax requests (connection reuse + polite UA)
-OS_SESSION = requests.Session()
-OS_SESSION.headers.update({
-    "User-Agent": "Savant-Educational-Ingestion/1.0 (github.com/Dienyemite/Savant)",
-    "Accept": "application/json",
-})
+TOKENIZER = tiktoken.get_encoding("cl100k_base")  # approximation for chunking
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -152,289 +114,51 @@ def split_at_paragraphs(text: str, max_tokens: int, overlap_tokens: int) -> list
     return [c for c in chunks if c.strip()]
 
 
-# ─── OpenStax API Fetching ────────────────────────────────────────────────────
+# ─── Extraction ──────────────────────────────────────────────────────────────
 
-def fetch_book_metadata(slug: str) -> dict:
+def extract_page_chunks(pdf_path: str, pages: list[int] | None) -> list[dict]:
     """
-    Fetches book metadata from the OpenStax CMS API.
+    Calls pymupdf4llm.to_markdown with page_chunks=True.
 
-    Returns a dict guaranteed to have 'cnx_id' and 'title'.
-    Exits with a descriptive error if the slug is not found or the response
-    doesn't contain a recognized CNX ID field.
+    Returns a list of page dicts, each containing:
+      - text: str          — clean Markdown for that page
+      - toc_items: list    — [[level, title, page_num], ...]
+      - metadata: dict     — page number, file path, title, author, etc.
+      - tables: list       — detected tables (already in Markdown inside text)
     """
-    url = f"{OPENSTAX_CMS_BASE}?slug={slug}"
-    resp = OS_SESSION.get(url, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    kwargs: dict = {"page_chunks": True}
+    if pages:
+        kwargs["pages"] = pages
 
-    items = data.get("items", [])
-    if not items:
-        sys.exit(
-            f"Error: No OpenStax book found with slug '{slug}'.\n"
-            f"Browse all slugs at: https://openstax.org/subjects\n"
-            f"(Use the URL path segment after /books/ as the slug)"
-        )
-
-    book = items[0]
-
-    # The CMS may expose the CNX UUID under different field names depending on
-    # the version. Try the known variants.
-    cnx_id = (
-        book.get("cnx_id")
-        or book.get("cnx_book_id")
-        or book.get("content_cnx_id")
-    )
-    if not cnx_id:
-        sys.exit(
-            f"Error: Book '{slug}' found but no CNX ID field in CMS response.\n"
-            f"Available fields: {list(book.keys())}\n"
-            f"Update the cnx_id lookup in fetch_book_metadata() with the correct field name."
-        )
-
-    return {**book, "cnx_id": cnx_id, "title": book.get("title", slug)}
+    return pymupdf4llm.to_markdown(pdf_path, **kwargs)
 
 
-def fetch_book_tree(cnx_id: str) -> dict:
+def resolve_section_labels(page_chunks: list[dict]) -> list[dict]:
     """
-    Fetches the full book tree (chapter/section hierarchy) from the OpenStax
-    archive server.
+    Walks all page chunks and carries the most recent TOC entry forward
+    so every page knows which chapter and section it belongs to.
 
-    Returns the JSON response, which has a top-level 'tree' key containing
-    the hierarchical 'contents' array (or the tree directly if unwrapped).
+    toc_items format: [[level, title, page_num], ...]
+      level 1 = chapter heading
+      level 2 = section heading
+      level 3+ = subsection (we treat as section)
     """
-    url = f"{OPENSTAX_ARCHIVE_BASE}/{cnx_id}"
-    resp = OS_SESSION.get(url, timeout=30, allow_redirects=True)
-    if not resp.ok:
-        sys.exit(
-            f"Error: Could not fetch book tree for CNX ID '{cnx_id}'.\n"
-            f"URL tried: {url}\n"
-            f"Status: {resp.status_code}\n"
-            f"The archive URL format may have changed. Check the current URL by\n"
-            f"opening https://openstax.org/books/{cnx_id}/pages/preface in a browser\n"
-            f"and inspecting the network requests to find the archive base URL."
-        )
-    return resp.json()
+    current_chapter: str | None = None
+    current_section: str | None = None
 
+    for chunk in page_chunks:
+        for item in chunk.get("toc_items", []):
+            level, title, _ = item
+            if level == 1:
+                current_chapter = title.strip()
+                current_section = None   # reset section on new chapter
+            elif level >= 2:
+                current_section = title.strip()
 
-def html_to_text(html: str) -> str:
-    """
-    Converts OpenStax page HTML to clean plain text suitable for embedding.
+        chunk["_chapter"] = current_chapter
+        chunk["_section"] = current_section
 
-    Removes: math elements (garbled in plain text), figure media, navigation,
-    answer/solution boxes, teacher notes, footnotes, and script/style tags.
-    Keeps: paragraph text, headings, list items, table content, captions.
-    """
-    soup = BeautifulSoup(html, "lxml")
-
-    # Remove non-content structural elements
-    for tag in soup.find_all(["nav", "script", "style", "noscript"]):
-        tag.decompose()
-
-    # Remove OpenStax-specific noise sections
-    # These are class names used by OpenStax for teacher/solution content
-    noise_classes = [
-        "os-teacher",          # teacher-only annotations
-        "os-solution",         # worked solutions
-        "os-answer",           # answer keys
-        "footnote",            # footnotes
-        "check-understanding", # comprehension checks (usually short)
-    ]
-    for cls in noise_classes:
-        for el in soup.find_all(attrs={"class": lambda c, _cls=cls: c and _cls in c}):
-            el.decompose()
-
-    # Replace MathML / math elements with a neutral placeholder.
-    # Raw MathML text is unreadable and confuses embeddings.
-    for math_el in soup.find_all(["math"]):
-        math_el.replace_with(" [math] ")
-
-    # Remove figure media (images/videos) but keep captions
-    for fig in soup.find_all("figure"):
-        # Keep any text inside the figure (captions), remove media tags
-        for media in fig.find_all(["img", "video", "audio", "iframe"]):
-            media.decompose()
-
-    # Extract text with paragraph separator
-    raw = soup.get_text(separator="\n", strip=True)
-
-    # Normalise blank lines: collapse 3+ consecutive newlines to 2
-    import re
-    text = re.sub(r"\n{3,}", "\n\n", raw)
-
-    # Drop lines that are too short to carry meaning (page numbers, lone labels)
-    lines = text.splitlines()
-    kept = [ln for ln in lines if len(ln.strip()) > 3 or ln.strip() == ""]
-    return "\n".join(kept).strip()
-
-
-def fetch_page_content(page_id: str) -> str:
-    """
-    Fetches an individual page's HTML content from the archive and returns
-    clean plain text.
-
-    page_id is the versioned ID from the book tree, e.g. 'uuid@version'.
-    """
-    url = f"{OPENSTAX_ARCHIVE_BASE}/{page_id}"
-    resp = OS_SESSION.get(url, timeout=30, allow_redirects=True)
-    if not resp.ok:
-        return ""  # non-fatal; build_savant_chunks skips empty pages
-
-    data = resp.json()
-    html_content = data.get("content", "")
-    if not html_content:
-        return ""
-
-    return html_to_text(html_content)
-
-
-def walk_book_tree(
-    tree_node: dict,
-    chapter_filter: set[int] | None = None,
-) -> list[dict]:
-    """
-    Recursively walks the book tree returned by the archive and returns a flat
-    list of page descriptors, each with:
-        {
-            "_chapter": str | None,   # "1 Units and Measurement"
-            "_section": str | None,   # "1.1 The Scope and Scale of Physics"
-            "page_id":  str,          # "uuid@version" — used to fetch content
-            "title":    str,          # display title
-        }
-
-    Tree structure (3 levels):
-        book root
-          └── chapter (has 'contents')
-                └── section/page (leaf: no 'contents', or has sub-pages)
-
-    Pages at the book root (Preface, Appendix, Index) are included without a
-    chapter label. If chapter_filter is given, only numbered chapters in that
-    set are fetched; unnumbered top-level items are always included.
-    """
-    pages: list[dict] = []
-    chapter_num = 0  # counts only numbered (digit-prefixed) chapters
-
-    for node in tree_node.get("contents", []):
-        title = (node.get("title") or "").strip()
-        sub_contents = node.get("contents")  # None for leaf pages
-
-        if sub_contents is None:
-            # Top-level leaf page (Preface, standalone appendix, etc.)
-            pages.append({
-                "_chapter": None,
-                "_section": title or None,
-                "page_id": node["id"],
-                "title": title,
-            })
-        else:
-            # Container node (chapter or appendix group)
-            is_numbered_chapter = bool(title) and title[0].isdigit()
-            if is_numbered_chapter:
-                chapter_num += 1
-                if chapter_filter and chapter_num not in chapter_filter:
-                    continue  # skip filtered-out chapters
-
-            for child in sub_contents:
-                child_title = (child.get("title") or "").strip()
-                child_sub = child.get("contents")
-
-                if child_sub is None:
-                    # Direct child page of the chapter
-                    pages.append({
-                        "_chapter": title,
-                        "_section": child_title if child_title != title else None,
-                        "page_id": child["id"],
-                        "title": child_title,
-                    })
-                else:
-                    # Nested section with its own sub-pages
-                    for grandchild in child_sub:
-                        gc_title = (grandchild.get("title") or "").strip()
-                        pages.append({
-                            "_chapter": title,
-                            "_section": child_title,
-                            "page_id": grandchild["id"],
-                            "title": gc_title,
-                        })
-
-    return pages
-
-
-def fetch_all_pages(page_descriptors: list[dict]) -> list[dict]:
-    """
-    Fetches HTML content for every page descriptor and returns page dicts
-    with a 'text' key added — the same format that build_savant_chunks()
-    consumes.
-
-    Shows a running progress indicator. Failed fetches are logged and skipped
-    (build_savant_chunks will drop empty-text entries automatically).
-    """
-    total = len(page_descriptors)
-    result: list[dict] = []
-
-    for i, page in enumerate(page_descriptors, 1):
-        label = page["title"][:55] + ("…" if len(page["title"]) > 55 else "")
-        print(f"  [{i:4d}/{total}] {label}")
-
-        try:
-            text = fetch_page_content(page["page_id"])
-        except Exception as exc:
-            print(f"    ⚠ fetch failed for {page['page_id']}: {exc}")
-            text = ""
-
-        if text:
-            result.append({
-                "_chapter": page["_chapter"],
-                "_section": page["_section"],
-                "text": text,
-            })
-
-        if i < total:
-            time.sleep(REQUEST_DELAY)
-
-    return result
-
-
-def extract_openstax_pages(
-    slug: str,
-    chapter_filter: set[int] | None = None,
-) -> tuple[list[dict], str]:
-    """
-    Full OpenStax extraction pipeline:
-      1. Fetch book metadata from the CMS  → get cnx_id and title
-      2. Fetch book tree from the archive   → get chapter/section structure
-      3. Fetch every page's text content    → plain text, deduplicated structure
-
-    Returns (page_dicts, book_title).
-    page_dicts each have _chapter, _section, text — the exact format that
-    build_savant_chunks() expects.
-    """
-    print("  Fetching book metadata from OpenStax CMS...")
-    metadata = fetch_book_metadata(slug)
-    book_title: str = metadata["title"]
-    cnx_id: str = metadata["cnx_id"]
-    print(f"  Title:  {book_title}")
-    print(f"  CNX ID: {cnx_id}")
-
-    print("  Fetching book tree from archive...")
-    book_data = fetch_book_tree(cnx_id)
-    # The archive returns either {"tree": {...}} or the tree directly
-    tree = book_data.get("tree") or book_data
-    version = book_data.get("version", "")
-    if version:
-        print(f"  Version: {version}")
-
-    page_descriptors = walk_book_tree(tree, chapter_filter)
-    chapter_count = len({p["_chapter"] for p in page_descriptors if p["_chapter"]})
-    print(f"  Found {len(page_descriptors)} pages across {chapter_count} chapters")
-
-    if chapter_filter:
-        print(f"  Chapter filter active: chapters {sorted(chapter_filter)}")
-
-    print(f"\n  Fetching page content (≈{len(page_descriptors) * REQUEST_DELAY:.0f}s at {REQUEST_DELAY}s/page)...")
-    pages = fetch_all_pages(page_descriptors)
-    print(f"  Fetched {len(pages)} pages with content ({len(page_descriptors) - len(pages)} skipped/empty)")
-
-    return pages, book_title
+    return page_chunks
 
 
 # ─── Chunking ────────────────────────────────────────────────────────────────
@@ -608,44 +332,33 @@ def insert_chunks(
 
 # ─── CLI entry point ─────────────────────────────────────────────────────────
 
-def parse_chapter_range(s: str) -> set[int]:
-    """Parses '1-5' or '1,3,5' into a set of chapter numbers (1-indexed)."""
+def parse_page_range(s: str) -> list[int]:
+    """Parses '0-120' or '5,10,15' into a list of ints."""
     if "-" in s:
-        start, end = s.split("-", 1)
-        return set(range(int(start), int(end) + 1))
-    return {int(x) for x in s.split(",")}
+        start, end = s.split("-")
+        return list(range(int(start), int(end) + 1))
+    return [int(x) for x in s.split(",")]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Ingest an OpenStax textbook into Savant's textbook_chunks table.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-examples:
-  python ingest_textbook.py --openstax-slug university-physics-volume-1 --subject physics
-  python ingest_textbook.py --openstax-slug calculus-volume-1 --subject calculus --chapters 1-8
-  python ingest_textbook.py --openstax-slug biology-2e --subject biology --start-chunk 200
-        """,
+        description="Ingest a textbook PDF into Savant's textbook_chunks table."
     )
-    parser.add_argument(
-        "--openstax-slug",
-        required=True,
-        help='OpenStax book slug, e.g. "university-physics-volume-1"',
-    )
+    parser.add_argument("--pdf", required=True, help="Path to the textbook PDF")
     parser.add_argument(
         "--subject",
         required=True,
-        help='Normalized subject label matching notebook subjects, e.g. "physics"',
+        help='Normalized subject label, e.g. "physics", "calculus"',
     )
     parser.add_argument(
         "--book-title",
-        default=None,
-        help="Override the book title stored in the DB (default: fetched from OpenStax API)",
+        required=True,
+        help='Full book title, e.g. "University Physics Vol 1"',
     )
     parser.add_argument(
-        "--chapters",
+        "--pages",
         default=None,
-        help='Numbered chapters to ingest, e.g. "1-10" or "1,3,5" (default: all)',
+        help='Page range to process, e.g. "0-120" or "5,10,15" (0-indexed)',
     )
     parser.add_argument(
         "--start-chunk",
@@ -655,40 +368,47 @@ examples:
     )
     args = parser.parse_args()
 
-    chapter_filter = parse_chapter_range(args.chapters) if args.chapters else None
+    pdf_path = Path(args.pdf).resolve()
+    if not pdf_path.exists():
+        sys.exit(f"Error: PDF not found at {pdf_path}")
+
+    pages = parse_page_range(args.pages) if args.pages else None
 
     print(f"\n{'='*60}")
-    print(f"  Savant Textbook Ingestion — OpenStax Content API")
+    print(f"  Savant Textbook Ingestion Pipeline")
     print(f"{'='*60}")
-    print(f"  Slug:    {args.openstax_slug}")
+    print(f"  PDF:     {pdf_path.name}")
     print(f"  Subject: {args.subject}")
-    if args.chapters:
-        print(f"  Chapters: {args.chapters}")
+    print(f"  Title:   {args.book_title}")
+    if pages:
+        print(f"  Pages:   {pages[0]}–{pages[-1]} ({len(pages)} pages)")
     if args.start_chunk:
         print(f"  Resume:  skipping first {args.start_chunk} chunks")
     print(f"{'='*60}\n")
 
-    # ── Init Supabase ─────────────────────────────────────────────────────────
+    # ── Init clients ──────────────────────────────────────────────────────────
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-    # ── Step 1: Fetch from OpenStax ───────────────────────────────────────────
-    print("Step 1/3 — Fetching content from OpenStax...")
-    labeled_pages, api_title = extract_openstax_pages(args.openstax_slug, chapter_filter)
-    book_title = args.book_title or api_title
-    print(f"  Book title: {book_title}")
+    # ── Step 1: Extract ───────────────────────────────────────────────────────
+    print("Step 1/4 — Extracting PDF with pymupdf4llm...")
+    raw_pages = extract_page_chunks(str(pdf_path), pages)
+    print(f"  Extracted {len(raw_pages)} pages")
 
-    chapters_found = {p["_chapter"] for p in labeled_pages if p["_chapter"]}
-    sections_found = {p["_section"] for p in labeled_pages if p["_section"]}
-    print(f"  Resolved {len(chapters_found)} chapters, {len(sections_found)} sections")
+    # ── Step 2: Resolve section labels ───────────────────────────────────────
+    print("Step 2/4 — Resolving chapter/section labels from TOC...")
+    labeled_pages = resolve_section_labels(raw_pages)
+    chapters = {p["_chapter"] for p in labeled_pages if p["_chapter"]}
+    sections = {p["_section"] for p in labeled_pages if p["_section"]}
+    print(f"  Found {len(chapters)} chapters, {len(sections)} sections")
 
-    # ── Step 2: Chunk ─────────────────────────────────────────────────────────
-    print("\nStep 2/3 — Chunking content into ~400 token segments...")
-    savant_chunks = build_savant_chunks(labeled_pages, args.subject, book_title)
+    # ── Step 3: Chunk ─────────────────────────────────────────────────────────
+    print("Step 3/4 — Chunking content into ~400 token segments...")
+    savant_chunks = build_savant_chunks(labeled_pages, args.subject, args.book_title)
     total_tokens = sum(count_tokens(c["content"]) for c in savant_chunks)
     print(f"  Created {len(savant_chunks)} chunks ({total_tokens:,} total tokens)")
 
-    # ── Step 3: Embed + Insert ────────────────────────────────────────────────
-    print("\nStep 3/3 — Embedding and inserting into Supabase...")
+    # ── Step 4: Embed + Insert ────────────────────────────────────────────────
+    print("Step 4/4 — Embedding and inserting into Supabase...")
     chunks_to_process = savant_chunks[args.start_chunk:]
     if args.start_chunk:
         print(f"  Resuming from chunk {args.start_chunk}/{len(savant_chunks)}")
@@ -705,7 +425,7 @@ examples:
         insert_chunks(buffer, supabase)
         inserted_total += len(buffer)
 
-    print(f"\n✓ Done — {inserted_total} chunks ingested for subject '{args.subject}'")
+    print(f"\n\u2713 Done \u2014 {inserted_total} chunks ingested for subject '{args.subject}'")
     print(f"  The lesson generator will now use these chunks automatically.\n")
 
 
